@@ -1,7 +1,7 @@
 	PROGRAM compensator
 c
 c       a dispersion compensator for pulsed electron ?????
-c       This is a test 
+c       final test 
 c
       use msimsl
 
