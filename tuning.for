@@ -15,8 +15,8 @@ c
 	common/worksp/rwksp
 	real*8 rwksp(43592)
 	call iwkin(43592)
-	OPEN(UNIT=11,FILE='disp.dat',type='replace')
-	OPEN(UNIT=12,FILE='disp2.dat',type='replace')        
+	OPEN(UNIT=11,FILE='tuning.dat',type='replace')
+	OPEN(UNIT=12,FILE='err.dat',type='replace')        
 	OPEN(UNIT=13,FILE='disp3.dat',type='replace')        
         OPEN(UNIT=14,FILE='disp4.dat',type='replace')        
         OPEN(UNIT=15,FILE='disp5.dat',type='replace')        
