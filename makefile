@@ -38,7 +38,7 @@ bgradient.tuning.3d:bgradient.tuning.3d.for
 	fl32 /4Yb /4L132 /nologo bgradient.tuning.3d.for
 	bgradient.tuning.3d.exe
 
-dxvsdw.blah:dxvsdw.blah.for
-	fl32 /4Yb /4L132 /nologo dxvsdw.blah.for
-	dxvsdw.blah.exe
+foo:foo.for
+	fl32 /4Yb /4L132 /nologo foo.for
+	foo.exe
 
