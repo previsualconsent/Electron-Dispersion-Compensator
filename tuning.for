@@ -102,7 +102,7 @@
       real*8 endoftim
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck
       parameter (mxparm=120,neq=6,p=3,q=3)
-      integer divider,r,error
+      integer divider,r,error,ending,steps
       parameter (divider=260,r=9)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
       parameter (B=.031D0)
@@ -111,11 +111,12 @@
       real*8 dw1,dw2,dummy,ddw,wfls,bls,percent,yold,theta
       !real*8 lastSteps(p,q,1000
       parameter (ddw=1D-2)
-      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep
+      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,scantime
       external fcn,divprk,sset
       !run test electron to get information about path
       write(6,*) "Initial Electron"
       do m=1,r                !decreases the filter width each iteration
+              ending=0
               pend=1D-1+m*1D-2
               length=me*vini/(e*B)*4D0*pi+pend
               endoftim=length/vini
@@ -253,6 +254,7 @@
                       !		if ((y1old.le.pend-sls).and.(y(1).gt.pend-sls)
                       !1.and.(counter.eq.8)) then
                       if ((tft.gt.endoftim-lowTstep).and.(tftold.le.endoftim-lowTstep)) then
+                              ending=1
                               step=hiTstep
                               lowstepcheck=lowstepcheck+1
                               !write(6,60) counter, 7, i
@@ -353,6 +355,7 @@
               do l=1,q
                       do k=1,p
                               test=0
+                              ending=0
                               ido=1
                               t=0d0
                               Bz=0.
@@ -374,7 +377,7 @@
                               tft=0D0
                               i=0
                               step=lowTstep
-                              do while(tft.le.endtime)
+                              do while(tft.le.endtime+lowTstep)
                                       i=i+1
                                       tft=tft+step
                                       tend=tft  
@@ -437,6 +440,7 @@
                                       !		if ((y1old.le.pend-sls).and.(y(1).gt.pend-sls)
                                       !1.and.(counter.eq.8)) then
                                       if ((tft.gt.endoftim-lowTstep).and.(tftold.le.endoftim-lowTstep)) then
+                                              ending=1
                                               step=hiTstep
                                               lowstepcheck=lowstepcheck+1
                                               !write(6,60) counter, 7, i
@@ -566,6 +570,11 @@
                                               vout(1,test,k+p*(l-1))=tft
                                               vout(2,test,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
                                       endif
+                                      if(ending.eq.1) then
+                                              !scandx
+                                              steps=1+steps
+                                      endif
+
 
                                       if (time(6).eq.i) then
                                               !write(6,*) m,i,time(m)
@@ -578,6 +587,8 @@
                                               !dataout(7,1,k)=y(1)-x1
                                       endif                
                               enddo
+                              write(6,*) "steps=", steps
+                              steps=0
                               if(lowstepcheck.ne.14) then
                                       error=1
                               endif

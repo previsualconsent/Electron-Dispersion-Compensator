@@ -20,6 +20,7 @@
       OPEN(UNIT=12,FILE='velocity.dat',type='replace')        
       OPEN(UNIT=13,FILE='times.dat',type='replace')        
       OPEN(UNIT=14,FILE='width.dat',type='replace')        
+      OPEN(UNIT=15,FILE='endtimes.dat',type='replace')        
 
       !write(6,*) ' stop integration at (micro s):'
       !read(*,*) endoftim
@@ -104,18 +105,17 @@
       real*8 divider,endoftim
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck
       parameter (mxparm=120,neq=6,p=3,q=3)
-      integer r,error
+      integer r,error,ending,endi,scani,scanj,scanp,scanq
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
-      parameter (B=.031D0,dw=.25D-1)
+      parameter (B=.031D0,dw=.8D-1)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q),weintime(7,p*q),dataout(7,2,p)
-      real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
+      real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q),scancomp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
-      integer step2,step1
       parameter (pend=1D-1,ddw=1D-4)
-      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q)
+      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(2,p,q,20000),scandx(20000),scantime
       external fcn,divprk,sset
-      ! !run test electron to get information about path
+      !run test electron to get information about path
       write(6,*) "Initial Electron"
       length=me*vini/(e*B)*4D0*pi+pend
       endoftim=length/vini
@@ -349,9 +349,11 @@
       !the v0 electron at correct distance
       !first electron done, do the rest
       Ed=E0 
-      divider=endtime/1000D0
+      divider=(endtime+lowTstep*100D0)/1000D0
       do l=1,q
               do k=1,p
+                      ending=0
+                      endi=1
                       test=0
                       ido=1
                       t=0d0
@@ -375,7 +377,7 @@
                       tft=0D0
                       i=0
                       step=lowTstep
-                      do while(tft.le.endtime)
+                      do while(tft.le.(endtime+lowTstep*100D0))
                               if ((test*divider).le.tft.and.test.lt.999) then
                                       test=test+1
 
@@ -443,12 +445,18 @@
                                       lowstepcheck=lowstepcheck+1
                                       !write(6,60) counter, 6, i
                               endif
+                              if ((tft.gt.endoftim-lowTstep*100D0).and.(tftold.le.endoftim-lowTstep)) then
+                                      ending=1
+                              endif
                               !if ((y1old.le.pend-sls).and.(y(1).gt.pend-sls)
                               !1.and.(counter.eq.8)) then
-                              if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
+                              if ((tft.gt.endoftim-lowTstep).and.(tftold.le.endoftim-lowTstep)) then
                                       step=hiTstep
                                       lowstepcheck=lowstepcheck+1
                                       !write(6,60) counter, 7, i
+                              endif
+                              if ((tft.gt.endoftim).and.(tftold.le.endoftim)) then
+                                      comp(k,l)=y(1)
                               endif
 62    format(18x,A,i10)
                               if ((y1old.le.pos1).and.(y(1).gt.pos1).and.(counter.eq.0)) then
@@ -539,7 +547,6 @@
                                       !dataout(2,6,k)=y(2)
                                       !dataout(3,6,k)=sqrt(y(4)*y(4)+y(5)*y(5))
                                       !dataout(4,6,k)=tft
-                                      step1=i
                                       weintime(6,k+p*(l-1))=tft
                               endif
 
@@ -578,7 +585,18 @@
                               endif
                               y1old=y(1)
                               tftold=tft
-
+                              
+                              if(ending.eq.1) then
+                                      if(endi.gt.20000) then
+                                              !write(6,*) "!!!!!!!!!!!!!!!!!!!!!",endi
+                                      endif
+                                      if(endi.le.20000) then
+                                              !write(6,*) k,l,endi
+                                              scandata(1,k,l,endi)=tft
+                                              scandata(2,k,l,endi)=y(1)
+                                      endif
+                                      endi=1+endi
+                              endif
                               if (time(6).eq.i) then
                                       !write(6,*) m,i,time(m)
                                       !dataout(1,1,k)=y(1)
@@ -590,8 +608,7 @@
                                       !dataout(7,1,k)=y(1)-x1
                               endif                
                       enddo
-                      step2=tft
-                      write(6,*) "steps=" step2-step1
+
                       if(lowstepcheck.ne.14) then
                               error=1
                       endif
@@ -608,7 +625,6 @@
                       !dataout(7,2,k)=y(1)-x2
                       weintime(7,k+p*(l-1))=tft
                       ido=3
-                      comp(k,l)=y(1)
                       mem(1,1000,k+p*(l-1))=y(1)
                       mem(2,1000,k+p*(l-1))=y(2)
                       vout(1,1000,k+p*(l-1))=tft
@@ -632,6 +648,35 @@
       !endif
       lowstepcheck=0
       !!!enddo
+      do test=1,20000
+              if(mod(test,1000).eq.0) then
+                      write(6,*) test
+              endif
+              scantime=scandata(1,(p+1)/2,(q+1)/2,test)
+              do scanp=1,p
+                      do scanq=1,q
+                              scani=1
+                              do while((scandata(1,scanp,scanq,scani).le.scantime).and.scani.lt.20000)
+                                      !write(6,*) test,scanp,scanq,scani
+                                      scani=1+scani
+                              enddo
+                              scancomp(scanp,scanq)=scandata(2,scanp,scanq,scani)
+                      enddo
+              enddo
+              scandx(test)=maxval(scancomp(1:p,1:q))-minval(scancomp(1:p,1:q))
+      enddo
+      write(6,*) "dx is also=",minval(scandx(1:20000))
+      do test=1,20000
+              if(mod(test,1000).eq.0) then
+                      write(6,*) test
+              endif
+
+              write(15,105) scandata(1:2,1:p,1:q,test), scandx(test)
+              if(scandx(test).eq.minval(scandx(1:20000))) then
+                      !write(6,*) test
+              endif
+      enddo
+
       do test=1,1000
               write(11,102) mem(1:2,test,1:p*q)
               write(12,102) mem(1,test,(p*q+1)/2), vout(2,test,1:p*q)
@@ -649,5 +694,6 @@
 101   format(2E15.7)
 102  	format(18E15.7)
 103   format(7(E12.7,','))
+105  	format(19E15.7)
       return
       end
