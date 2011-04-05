@@ -107,7 +107,7 @@
       integer r,error
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
-      parameter (B=.031D0,dw=.25D-1)
+      parameter (B=.031D0,dw=.8D-1)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q),weintime(7,p*q),dataout(7,2,p)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
@@ -591,7 +591,7 @@
                               endif                
                       enddo
                       step2=tft
-                      write(6,*) "steps=" step2-step1
+                      write(6,*) "steps=", step2-step1
                       if(lowstepcheck.ne.14) then
                               error=1
                       endif
