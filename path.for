@@ -105,7 +105,7 @@
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck,iold
       parameter (mxparm=120,neq=6,p=3,q=3)
       integer r,error, ti, scanl,scanprec
-      parameter (scanl=20,scanprec=2)
+      parameter (scanl=40,scanprec=2)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
       parameter (B=.031D0,dw=.8D-1)
@@ -113,7 +113,7 @@
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
       integer step2,step1
-      parameter (pend=1D-1,ddw=1D-4)
+      parameter (pend=1.1D-1,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
       real*8 timecheck
       external fcn,divprk,sset
@@ -658,12 +658,12 @@
 
       write(6,*) "dx is also=", minval(scandx(0:scanl*2))
 
-      !do test=1,1000
-      !        write(11,102) mem(1:2,test,1:p*q)
+      do test=1,1000
+              write(11,102) mem(1:2,test,1:p*q)
       !        write(12,102) mem(1,test,(p*q+1)/2), vout(2,test,1:p*q)
       !        !disp(1:p*q)=mem(1,test,1:p*q)-mem(1,test,(p*q+1)/2)
       !        write(14,102) mem(1,test,(p*q+1)/2), mem(1,test,3)-mem(1,test,2)!maxval(mem(1,test,1:p*q))-minval(mem(1,test,1:p*q))
-      !enddo
+      enddo
       do test=1,7
               write(13,102) weintime(test,1:p*q)
       enddo
