@@ -16,7 +16,7 @@
       OPEN(UNIT=11,FILE='tuning.dat',type='replace')
       OPEN(UNIT=12,FILE='err.dat',type='replace')        
       !OPEN(UNIT=13,FILE='disp3.dat',type='replace')        
-      !OPEN(UNIT=14,FILE='disp4.dat',type='replace')        
+      OPEN(UNIT=14,FILE='dx.dat',type='replace')        
       !OPEN(UNIT=15,FILE='disp5.dat',type='replace')        
 
       ! write(6,*) ' stop integration at (micro s):'
@@ -100,23 +100,23 @@
       real*8 y1old
       common/time/ endoftim
       real*8 endoftim
-      integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck
+      integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck,iold
       parameter (mxparm=120,neq=6,p=3,q=3)
-      integer divider,r,error
-      parameter (divider=260,r=9)
+      integer divider,r,error,ti,scanl,scanprec
+      parameter (divider=260,r=9,scanl=20,scanprec=1000)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
-      parameter (B=.031D0)
+      parameter (B=.031D0,dw=8D-2)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)!,dataout(7,2,p),weintime(7,p)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,percent,yold,theta
-      !real*8 lastSteps(p,q,1000
       parameter (ddw=1D-2)
-      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep
+      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,scandata(p,q,0:scanl*2),scandx(0:scanl*2)
+      real*8 timecheck,outvar
       external fcn,divprk,sset
       !run test electron to get information about path
       write(6,*) "Initial Electron"
       do m=1,r                !decreases the filter width each iteration
-              pend=1D-1+m*1D-2
+              pend=1D-1+(m-1)*1D-2
               length=me*vini/(e*B)*4D0*pi+pend
               endoftim=length/vini
               !lowTstep=endoftim/lowstep
@@ -135,7 +135,7 @@
               sls=lowTstep*vini        !distance infront of border to go to hi-res
               hiTstep=sls/(1D3*vini)   !hi-res step for approaching borders 
               !dw=m*ddw
-              dw=pend/2D0
+              !dw=pend/2D0
               !E0=-B*vini/4D0          !sets the value of the Wien filter so c=-1
               percent=1-(m-(r+1)/2)/1D2 
               E0=-(pend*B*vini)/(dw*4D0)
@@ -343,6 +343,7 @@
               x2=y(1)
               ido=3
               endtime=tft
+              timecheck=tft
               call divprk(ido,neq,fcn,t,tend,tol,param,y)
               write(6,*) "Lowstepcheck=",lowstepcheck
               lowstepcheck=0
@@ -354,6 +355,7 @@
                       do k=1,p
                               test=0
                               ido=1
+                              ti=0
                               t=0d0
                               Bz=0.
                               Ey=0.
@@ -374,7 +376,7 @@
                               tft=0D0
                               i=0
                               step=lowTstep
-                              do while(tft.le.endtime)
+                              do while(tft.le.endtime+scanl*lowTstep*scanprec)
                                       i=i+1
                                       tft=tft+step
                                       tend=tft  
@@ -437,9 +439,15 @@
                                       !		if ((y1old.le.pend-sls).and.(y(1).gt.pend-sls)
                                       !1.and.(counter.eq.8)) then
                                       if ((tft.gt.endoftim-lowTstep).and.(tftold.le.endoftim-lowTstep)) then
-                                              step=hiTstep
+                                              !step=hiTstep
                                               lowstepcheck=lowstepcheck+1
                                               !write(6,60) counter, 7, i
+                                      endif
+              if ((tft.gt.timecheck+lowTstep*scanprec*(ti-scanl)).and.(tftold.le.timecheck+lowTstep*scanprec*(ti-scanl))) then
+                                              scandata(k,l,ti)=y(1)
+                                              if(ti.ne.scanl*2) then
+                                                      ti=ti+1
+                                              endif
                                       endif
 62    format(18x,A,i10)
                                       if ((y1old.le.pos1).and.(y(1).gt.pos1).and.(counter.eq.0)) then
@@ -524,6 +532,9 @@
                                               !			dataout(4,6,k)=tft
                                               !weintime(6,k)=tft
                                       endif
+                                      if((tftold.le.endtime).and.(tft.gt.endtime)) then
+                                              comp(k,l)=y(1)
+                                      endif
 
                                       if (counter.eq.1) then 
                                               Bz=-B
@@ -594,7 +605,6 @@
                               !dataout(7,2,k)=y(1)-x2
                               !weintime(7,k)=tft
                               ido=3
-                              comp(k,l)=y(1)
                               !	write(6,*) "test2" 
                               call divprk(ido,neq,fcn,t,tend,tol,param,y)
 
@@ -603,11 +613,23 @@
                       enddo
               enddo
               write(6,'(A,E12.4)') ' dx=',maxval(comp(1:p,1:q))-minval(comp(1:p,1:q))
+              do test=0,scanl*2
+                      scandx(test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
+                      write(14,104) scandata(1:p,1:q,test)-scandata(2,2,test), scandx(test)
+              enddo
+              if(minval(scandx(0:scanl*2)).eq.scandx(0).or.minval(scandx(0:scanl*2)).eq.scandx(scanl*2)) then
+                      write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
+                      error=1
+              endif
+              write(6,*) "dx(accurate)=", minval(scandx(0:scanl*2))
+              
+              outvar=pend
               if (error.eq.1) then
-                      write(6,*) "Invalid Test", lowstepcheck
-                      write(12,101) pend,maxval(comp(1:p,1:q))-minval(comp(1:p,1:q))
+                      write(6,*) "Invalid Test"
+                      write(12,101) outvar,minval(scandx(0:scanl*2))
+                      
               else
-                      write(11,101) pend, maxval(comp(1:p,1:q))-minval(comp(1:p,1:q))
+                      write(11,101) outvar, minval(scandx(0:scanl*2))
               endif
               lowstepcheck=0
       enddo
@@ -621,5 +643,6 @@
 101   format(2E15.7)
 102	format(18E15.7)
 103   format(7(E12.7,','))
+104   format(10E15.7)
       return
       end

@@ -102,9 +102,10 @@
       real*8 y1old
       common/time/ endoftim
       real*8 divider,endoftim
-      integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck
+      integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck,iold
       parameter (mxparm=120,neq=6,p=3,q=3)
-      integer r,error
+      integer r,error, ti, scanl,scanprec
+      parameter (scanl=20,scanprec=2)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
       parameter (B=.031D0,dw=.8D-1)
@@ -113,7 +114,8 @@
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
       integer step2,step1
       parameter (pend=1D-1,ddw=1D-4)
-      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q)
+      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
+      real*8 timecheck
       external fcn,divprk,sset
       ! !run test electron to get information about path
       write(6,*) "Initial Electron"
@@ -339,6 +341,7 @@
               y1old=y(1)
               tftold=tft
       enddo
+                      timecheck=tft
       x2=y(1)
       ido=3
       endtime=tft
@@ -355,6 +358,7 @@
                       test=0
                       ido=1
                       t=0d0
+                      ti=0
                       Bz=0.
                       Ey=0.
                       counter=0
@@ -375,7 +379,7 @@
                       tft=0D0
                       i=0
                       step=lowTstep
-                      do while(tft.le.endtime)
+                      do while(tft.le.endtime+scanl*lowTstep*scanprec)
                               if ((test*divider).le.tft.and.test.lt.999) then
                                       test=test+1
 
@@ -446,9 +450,17 @@
                               !if ((y1old.le.pend-sls).and.(y(1).gt.pend-sls)
                               !1.and.(counter.eq.8)) then
                               if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
-                                      step=hiTstep
+                                      !step=hiTstep
                                       lowstepcheck=lowstepcheck+1
                                       !write(6,60) counter, 7, i
+                              endif
+                              if ((tft.gt.timecheck+lowTstep*scanprec*(ti-scanl)).and.
+     1(tftold.le.timecheck+lowTstep*scanprec*(ti-scanl))) then
+                                      scandata(k,l,ti)=y(1)
+                                      !write(6,*) ti,counter, tft, scandata(k,l,ti)
+                                      if (ti.ne.scanl*2) then
+                                              ti=ti+1
+                                      endif
                               endif
 62    format(18x,A,i10)
                               if ((y1old.le.pos1).and.(y(1).gt.pos1).and.(counter.eq.0)) then
@@ -542,6 +554,9 @@
                                       step1=i
                                       weintime(6,k+p*(l-1))=tft
                               endif
+                              if((tftold.le.endtime).and.(tft.gt.endtime)) then
+                                      comp(k,l)=y(1)
+                              endif
 
                               if (counter.eq.1) then 
                                       Bz=-B
@@ -590,7 +605,7 @@
                                       !dataout(7,1,k)=y(1)-x1
                               endif                
                       enddo
-                      step2=tft
+                      step2=i
                       write(6,*) "steps=", step2-step1
                       if(lowstepcheck.ne.14) then
                               error=1
@@ -608,7 +623,6 @@
                       !dataout(7,2,k)=y(1)-x2
                       weintime(7,k+p*(l-1))=tft
                       ido=3
-                      comp(k,l)=y(1)
                       mem(1,1000,k+p*(l-1))=y(1)
                       mem(2,1000,k+p*(l-1))=y(2)
                       vout(1,1000,k+p*(l-1))=tft
@@ -632,12 +646,24 @@
       !endif
       lowstepcheck=0
       !!!enddo
-      do test=1,1000
-              write(11,102) mem(1:2,test,1:p*q)
-              write(12,102) mem(1,test,(p*q+1)/2), vout(2,test,1:p*q)
-              !disp(1:p*q)=mem(1,test,1:p*q)-mem(1,test,(p*q+1)/2)
-              write(14,102) mem(1,test,(p*q+1)/2), mem(1,test,3)-mem(1,test,2)!maxval(mem(1,test,1:p*q))-minval(mem(1,test,1:p*q))
+      do test=0,scanl*2
+              scandx(test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
+              !write(6,*) test, scandx(test)
+              write(14,104) scandata(1:p,1:q,test)-scandata(2,2,test), scandx(test)
       enddo
+      if(minval(scandx(0:scanl*2)).eq.scandx(0).or.minval(scandx(0:scanl*2)).eq.scandx(scanl*2)) then
+              write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
+      endif
+
+
+      write(6,*) "dx is also=", minval(scandx(0:scanl*2))
+
+      !do test=1,1000
+      !        write(11,102) mem(1:2,test,1:p*q)
+      !        write(12,102) mem(1,test,(p*q+1)/2), vout(2,test,1:p*q)
+      !        !disp(1:p*q)=mem(1,test,1:p*q)-mem(1,test,(p*q+1)/2)
+      !        write(14,102) mem(1,test,(p*q+1)/2), mem(1,test,3)-mem(1,test,2)!maxval(mem(1,test,1:p*q))-minval(mem(1,test,1:p*q))
+      !enddo
       do test=1,7
               write(13,102) weintime(test,1:p*q)
       enddo
@@ -649,5 +675,6 @@
 101   format(2E15.7)
 102  	format(18E15.7)
 103   format(7(E12.7,','))
+104   format(10E15.7)
       return
       end
