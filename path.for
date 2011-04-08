@@ -105,7 +105,7 @@
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck,iold
       parameter (mxparm=120,neq=6,p=3,q=3)
       integer r,error, ti, scanl,scanprec
-      parameter (scanl=40,scanprec=2)
+      parameter (scanl=1000,scanprec=7)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
       parameter (B=.031D0,dw=.8D-1)
@@ -113,7 +113,7 @@
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
       integer step2,step1
-      parameter (pend=1.1D-1,ddw=1D-4)
+      parameter (pend=1.15D-1,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
       real*8 timecheck
       external fcn,divprk,sset

@@ -109,14 +109,14 @@
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)!,dataout(7,2,p),weintime(7,p)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,percent,yold,theta
-      parameter (ddw=1D-2,pend=1D-1)
+      parameter (ddw=1D-2)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,scandata(p,q,0:scanl*2),scandx(0:scanl*2)
       real*8 timecheck,outvar
       external fcn,divprk,sset
       !run test electron to get information about path
       write(6,*) "Initial Electron"
       do m=1,r                !decreases the filter width each iteration
-              
+              pend=1D-1+(m-1)*1D-2
               length=me*vini/(e*B)*4D0*pi+pend
               endoftim=length/vini
               !lowTstep=endoftim/lowstep
@@ -138,7 +138,7 @@
               !dw=pend/2D0
               !E0=-B*vini/4D0          !sets the value of the Wien filter so c=-1
               percent=1-(m-(r+1)/2)/1D2 
-              E0=-(pend*B*vini*percent)/(dw*4D0)
+              E0=-(pend*B*vini)/(dw*4D0)
               pos1=(pend-dw)/4D0 !first B-field border
               pos2=pend-pos1     !second B-field border
               dw1=pend/2D0-dw/2D0 !start of Wien filter
