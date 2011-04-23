@@ -103,9 +103,9 @@
       common/time/ endoftim
       real*8 divider,endoftim
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck,iold
-      parameter (mxparm=120,neq=6,p=3,q=3)
+      parameter (mxparm=120,neq=6,p=1,q=3)
       integer r,error, ti, scanl,scanprec
-      parameter (scanl=40,scanprec=2)
+      parameter (scanl=100,scanprec=50)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
       parameter (B=.031D0,dw=.8D-1)
@@ -113,7 +113,7 @@
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
       integer step2,step1
-      parameter (pend=1.1D-1,ddw=1D-4)
+      parameter (pend=1D-1,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
       real*8 timecheck
       external fcn,divprk,sset
@@ -304,6 +304,7 @@
               endif
               if ((y1old.le.pos2).and.(y(1).gt.pos2).and.(counter.eq.7)) then
                       step=lowTstep
+                      timecheck=tft
                       counter=8
                       !write(6,61) counter,i
                       time(6)=i
@@ -341,7 +342,6 @@
               y1old=y(1)
               tftold=tft
       enddo
-                      timecheck=tft
       x2=y(1)
       ido=3
       endtime=tft
@@ -379,7 +379,7 @@
                       tft=0D0
                       i=0
                       step=lowTstep
-                      do while(tft.le.endtime+scanl*lowTstep*scanprec)
+                      do while(tft.le.timecheck+scanl*2D0*lowTstep*scanprec)
                               if ((test*divider).le.tft.and.test.lt.999) then
                                       test=test+1
 
@@ -454,8 +454,8 @@
                                       lowstepcheck=lowstepcheck+1
                                       !write(6,60) counter, 7, i
                               endif
-                              if ((tft.gt.timecheck+lowTstep*scanprec*(ti-scanl)).and.
-     1(tftold.le.timecheck+lowTstep*scanprec*(ti-scanl))) then
+                              if ((tft.gt.timecheck+lowTstep*scanprec*scanl).and.
+     1(tftold.le.timecheck+lowTstep*scanprec*scanl)) then
                                       scandata(k,l,ti)=y(1)
                                       !write(6,*) ti,counter, tft, scandata(k,l,ti)
                                       if (ti.ne.scanl*2) then
@@ -649,7 +649,7 @@
       do test=0,scanl*2
               scandx(test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
               !write(6,*) test, scandx(test)
-              write(14,104) scandata(1:p,1:q,test)-scandata(2,2,test), scandx(test)
+              write(14,104) scandata(1:p,1:q,test)-scandata(1,2,test), scandx(test)
       enddo
       if(minval(scandx(0:scanl*2)).eq.scandx(0).or.minval(scandx(0:scanl*2)).eq.scandx(scanl*2)) then
               write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"

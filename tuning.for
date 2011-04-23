@@ -101,9 +101,9 @@
       common/time/ endoftim
       real*8 endoftim
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck,iold
-      parameter (mxparm=120,neq=6,p=3,q=3)
+      parameter (mxparm=120,neq=6,p=1,q=3)
       integer divider,r,error,ti,scanl,scanprec
-      parameter (divider=260,r=51,scanl=20,scanprec=10000)
+      parameter (divider=260,r=10,scanl=200,scanprec=100)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw
       parameter (B=.031D0,dw=8D-2)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)!,dataout(7,2,p),weintime(7,p)
@@ -137,8 +137,8 @@
               !dw=m*ddw
               !dw=pend/2D0
               !E0=-B*vini/4D0          !sets the value of the Wien filter so c=-1
-              percent=1-(m-(r+1)/2)/1D2 
-              E0=-(pend*B*vini*percent)/(dw*4D0)
+              percent=m*10D0/1D2
+              E0=-(pend*B*vini)/(dw*4D0)
               pos1=(pend-dw)/4D0 !first B-field border
               pos2=pend-pos1     !second B-field border
               dw1=pend/2D0-dw/2D0 !start of Wien filter
@@ -306,6 +306,7 @@
                               counter=8
                               !write(6,61) counter,i
                               time(6)=i
+                              timecheck=tft
                               x1=y(1)
                       endif
 
@@ -343,7 +344,6 @@
               x2=y(1)
               ido=3
               endtime=tft
-              timecheck=tft
               call divprk(ido,neq,fcn,t,tend,tol,param,y)
               write(6,*) "Lowstepcheck=",lowstepcheck
               lowstepcheck=0
@@ -376,7 +376,7 @@
                               tft=0D0
                               i=0
                               step=lowTstep
-                              do while(tft.le.endtime+scanl*lowTstep*scanprec)
+                              do while(tft.le.endtime+scanl*2D0*lowTstep*scanprec)
                                       i=i+1
                                       tft=tft+step
                                       tend=tft  
@@ -443,7 +443,7 @@
                                               lowstepcheck=lowstepcheck+1
                                               !write(6,60) counter, 7, i
                                       endif
-              if ((tft.gt.timecheck+lowTstep*scanprec*(ti-scanl)).and.(tftold.le.timecheck+lowTstep*scanprec*(ti-scanl))) then
+              if ((tft.gt.timecheck+lowTstep*scanprec*(ti)).and.(tftold.le.timecheck+lowTstep*scanprec*(ti))) then
                                               scandata(k,l,ti)=y(1)
                                               if(ti.ne.scanl*2) then
                                                       ti=ti+1
@@ -550,7 +550,7 @@
                                               Ey=Ed
                                               !Bz=Ey/(sqrt((vini+(y(2)-y0)*e*B/(4*me))**2+e*Ed*(y(2)-y0)/me))
                                               !Bz=E0/y(4)
-        Bz=Ed*(1/vini-(y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3))**2)
+        Bz=Ed*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3))**2)*percent)
                                               !Bz=Ey/vini
                                       endif
                                       if (counter.eq.5) then 
@@ -593,6 +593,10 @@
                                       error=1
                                       write(6,*) "Lowstepcheck fail"
                               endif
+                              if(ti.ne.scanl*2) then
+                                      error=1
+                                      write(6,*) "scan fail"
+                              endif
                               lowstepcheck=0
                               write(6,*) "end step=", i
                               !mem(1,test,k+3*(l-1))=y(1)
@@ -616,7 +620,7 @@
               write(6,'(A,E12.4)') ' dx=',maxval(comp(1:p,1:q))-minval(comp(1:p,1:q))
               do test=0,scanl*2
                       scandx(test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
-                      write(14,104) scandata(1:p,1:q,test)-scandata(2,2,test), scandx(test)
+                      write(14,104) scandata(1:p,1:q,test)-scandata(1,2,test), scandx(test)
               enddo
               if(minval(scandx(0:scanl*2)).eq.scandx(0).or.minval(scandx(0:scanl*2)).eq.scandx(scanl*2)) then
                       write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
@@ -627,6 +631,7 @@
               outvar=percent
               if (error.eq.1) then
                       write(6,*) "Invalid Test"
+                      error=0
                       write(12,101) outvar,minval(scandx(0:scanl*2))
                       
               else
