@@ -53,7 +53,7 @@
       e=1.60217646D-19
       length=.32815D0
       !length=2D0
-      vini=3.23D7
+      vini=3.23D1
       endoftim=length/vini
 
       return
@@ -108,11 +108,11 @@
       parameter (scanl=1000,scanprec=4)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw,dE,dtheta
-      parameter (B=.031D0,dw=.8D-1,dE=5D-4,dtheta=2D-3)
+      parameter (B=.031D12,dw=.8D5,dE=5D-4,dtheta=2D-3)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
-      parameter (pend=1D-1,ddw=1D-4)
+      parameter (pend=1D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
       real*8 timecheck
       logical debugout
