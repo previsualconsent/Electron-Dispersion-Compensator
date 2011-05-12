@@ -108,7 +108,7 @@
       parameter (scanl=100,scanprec=50)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw,dE,dtheta
-      parameter (B=.031D0,dw=.8D-1,dE=5D-4,dtheta=2D-3)
+      parameter (B=.031D0,dw=.5D-1,dE=2.5D-4,dtheta=2D-3)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
@@ -546,7 +546,6 @@
                           step=lowTstep
                           counter=8
                           Bz=0D0
-                          timecheck=tft
                           if (debugout) write(6,61) counter,i
                           time(6)=i
                           x1=y(1)
@@ -614,6 +613,7 @@
 
       do test=1,1000
           write(11,102) mem(1:2,test,1:p*q)
+          write(12,102) vout(1:2,test,1:p*q)
       enddo
       do test=1,p*q
           write(6,*) Vg(test)
