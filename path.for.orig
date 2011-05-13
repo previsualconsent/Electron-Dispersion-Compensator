@@ -53,7 +53,7 @@
       e=1.60217646D-19
       length=.32815D0
       !length=2D0
-      vini=3.23D1
+      vini=3.23D7
       endoftim=length/vini
 
       return
@@ -105,14 +105,22 @@
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck,iold
       parameter (mxparm=120,neq=6,p=1,q=3)
       integer r,error, ti, scanl,scanprec
+<<<<<<< HEAD
       parameter (scanl=100,scanprec=50)
+=======
+      parameter (scanl=1000,scanprec=4)
+>>>>>>> scaling
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw,dE,dtheta
-      parameter (B=.031D0,dw=.5D-1,dE=2.5D-4,dtheta=2D-3)
+      parameter (B=.031D0,dw=.8D-1,dE=5D-4,dtheta=2D-3)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
-      parameter (pend=1D5,ddw=1D-4)
+<<<<<<< HEAD
+      integer step2,step1
+=======
+>>>>>>> scaling
+      parameter (pend=1D-1,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
       real*8 timecheck
       logical debugout
@@ -187,6 +195,48 @@
 60    format(x,'counter=',i1,x,'flag=',i1,x,'steps=',i10)
 61    format(x,'counter=',i1,8x,'steps=',i10)
 
+<<<<<<< HEAD
+              endif
+              if ((y1old.le.pos1).and.(y(1).gt.pos1).and.(counter.eq.2)) then
+                      step=lowTstep
+                      counter=3
+                      !write(6,61) counter,i
+                      time(2)=i
+              endif
+              if ((y1old.le.dw1).and.(y(1).gt.dw1).and.(counter.eq.3)) then
+                      !write(6,*) pend/2-dw/2,pend/2+dw/2
+                      counter=4
+                      step=wfTstep
+                      !write(6,61) counter,i
+                      time(3)=i
+                      y0=y(2)
+              endif
+              if ((y1old.le.dw2).and.(y(1).gt.dw2).and.(counter.eq.4)) then
+                      step=lowTstep
+                      counter=5
+                      !write(6,61) counter,i
+                      time(4)=i
+              endif
+              if ((y1old.le.pos2).and.(y(1).gt.pos2).and.(counter.eq.5)) then
+                      step=bTstep
+                      counter=6
+                      !write(6,61) counter,i
+                      time(5)=i
+              endif
+              if ((y1old.gt.pos2).and.(y(1).le.pos2).and.(counter.eq.6)) then
+                      step=bTstep
+                      counter=7
+                      !write(6,61) counter,i
+              endif
+              if ((y1old.le.pos2).and.(y(1).gt.pos2).and.(counter.eq.7)) then
+                      step=lowTstep
+                      timecheck=tft
+                      counter=8
+                      !write(6,61) counter,i
+                      time(6)=i
+                      x1=y(1)
+              endif
+=======
       select case (counter)
       case (0)
           Bz=0D0
@@ -373,13 +423,14 @@
               y(5)=(1.00D0+2D0**1*dE/4*(l-(q+1D0)/2D0))*vini*sin(dtheta/2*(k-(p+1D0)/2D0))
 
               write(6,50) k,p,l,q
-50    format(x/,x,i1,'/',i1,x,i1,'/',i1)
+50    format(x/,x,i1,'/',i1,x,i1,'/',i1,/)
               call sset(mxparm,0.0,param,1)
               param(4)=1000000000
               param(10)=1D0 
               tft=0D0
               i=0
               step=lowTstep
+>>>>>>> scaling
 
 62    format(18x,A,i10)
 
@@ -400,6 +451,289 @@
                   case (0)
                       Bz=0D0
                       Ey=0D0
+<<<<<<< HEAD
+              endif 
+              if (counter.eq.6) then 
+                      Bz=B
+                      Ey=0D0
+              endif 
+              if (counter.eq.7) then 
+                      Bz=-B
+              endif 
+              if (counter.eq.8) then 
+                      Bz=0D0
+              endif
+              y1old=y(1)
+              tftold=tft
+      enddo
+      x2=y(1)
+      ido=3
+      endtime=tft
+      call divprk(ido,neq,fcn,t,tend,tol,param,y)
+      write(6,*) "Lowstepcheck=",lowstepcheck
+      lowstepcheck=0
+      z=i	! this sets the time steps to stop 
+      !the v0 electron at correct distance
+      !first electron done, do the rest
+      Ed=E0 
+      divider=endtime/1000D0
+      do l=1,q
+              do k=1,p
+                      test=0
+                      ido=1
+                      t=0d0
+                      ti=0
+                      Bz=0.
+                      Ey=0.
+                      counter=0
+                      lowstepcheck=0
+                      do i=1,neq
+                              y(i)=0d0
+                      enddo
+
+                      y(4)=(1.00D0+2D0**1*2.5D-5*(l-(q+1D0)/2D0))*vini*cos(.001D0*(k-(p+1D0)/2D0))
+                      y(5)=(1.00D0+2D0**1*2.5D-5*(l-(q+1D0)/2D0))*vini*sin(.001D0*(k-(p+1D0)/2D0))
+                      !	y(2)=j*0.001   !(start at 11 position separated by 1 mm each)
+                      !	write(6,*) y(2)
+                      write(6,50) k,p,l,q,m,r,Ed,y(4)
+50    format(x/,x/,x,i1,'/',i1,x,i1,'/',i1,x,i2,'/',x,i2/,' Ed=',E12.2,x,'v0=',E12.2//)
+                      call sset(mxparm,0.0,param,1)
+                      param(4)=1000000000
+                      param(10)=1D0 
+                      tft=0D0
+                      i=0
+                      step=lowTstep
+                      do while(tft.le.timecheck+scanl*2D0*lowTstep*scanprec)
+                              if ((test*divider).le.tft.and.test.lt.999) then
+                                      test=test+1
+
+                                      mem(1,test,k+p*(l-1))=y(1)
+                                      mem(2,test,k+p*(l-1))=y(2)
+                                      vout(1,test,k+p*(l-1))=tft
+                                      vout(2,test,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
+                              endif
+                              i=i+1
+                              tft=tft+step
+                              tend=tft  
+                              call divprk(ido,neq,fcn,t,tend,tol,param,y)
+                              if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls).and.counter.eq.2) then
+                                      step=lowTstep
+                                      !write(6,60) counter, 1, i
+                                      lowstepcheck=lowstepcheck+1
+                              endif
+                              if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls).and.(counter.eq.1)) then
+                                      step=lowTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter, 2, i
+                              endif
+                              if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls).and.(counter.eq.0.or.counter.eq.2)) then
+                                      step=hiTstep
+                                      !write(6,60) counter, 1, i
+                                      lowstepcheck=lowstepcheck+1
+                              endif
+                              if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls).and.(counter.eq.1)) then
+                                      step=hiTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter, 2, i
+                              endif
+                              if ((y1old.le.dw1-sls).and.(y(1).gt.dw1-sls).and.counter.eq.3) then
+                                      step=hiTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter,3, i
+                              endif
+                              if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls).and.counter.eq.4) then
+                                      step=lowTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter,4, i
+                              endif
+                              if ((y1old.le.dw2-sls).and.(y(1).gt.dw2-sls).and.counter.eq.4) then
+                                      step=hiTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter,4, i
+                              endif
+                              if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls).and.(counter.eq.6)) then
+                                      step=lowTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter, 5, i
+                              endif
+                              if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls).and.(counter.eq.6)) then
+                                      step=hiTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter, 5, i
+                              endif
+                              if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls).and.counter.eq.7) then
+                                      step=lowTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter, 6, i
+                              endif
+                              if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls).and.(counter.eq.7.or.counter.eq.5)) then
+                                      step=hiTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter, 6, i
+                              endif
+                              !if ((y1old.le.pend-sls).and.(y(1).gt.pend-sls)
+                              !1.and.(counter.eq.8)) then
+                              if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
+                                      !step=hiTstep
+                                      lowstepcheck=lowstepcheck+1
+                                      !write(6,60) counter, 7, i
+                              endif
+                              if ((tft.gt.timecheck+lowTstep*scanprec*scanl).and.
+     1(tftold.le.timecheck+lowTstep*scanprec*scanl)) then
+                                      scandata(k,l,ti)=y(1)
+                                      !write(6,*) ti,counter, tft, scandata(k,l,ti)
+                                      if (ti.ne.scanl*2) then
+                                              ti=ti+1
+                                      endif
+                              endif
+62    format(18x,A,i10)
+                              if ((y1old.le.pos1).and.(y(1).gt.pos1).and.(counter.eq.0)) then
+                                      counter=1
+                                      !write(6,62) "steps=", i
+                                      step=bTstep
+                                      !			dataout(1,1,k)=y(1)
+                                      !			dataout(2,1,k)=y(2)
+                                      !			dataout(3,1,k)=sqrt(y(4)*y(4)+y(5)*y(5))
+                                      !			dataout(4,1,k)=tft
+                                      weintime(1,k+p*(l-1))=tft
+                              endif
+                              if ((y1old.gt.pos1).and.(y(1).le.pos1).and.(counter.eq.1)) then
+                                      counter=2
+                                      !write(6,62) "steps=", i
+                                      step=bTstep 
+                              endif
+                              if ((y1old.le.pos1).and.(y(1).gt.pos1).and.(counter.eq.2)) then
+                                      counter=3	
+                                      !write(6,62) "steps=", i
+                                      step=lowTstep
+                                      !			dataout(1,2,k)=y(1)
+                                      !			dataout(2,2,k)=y(2)
+                                      !			dataout(3,2,k)=sqrt(y(4)*y(4)+y(5)*y(5))
+                                      !			dataout(4,2,k)=tft
+                                      weintime(2,k+p*(l-1))=tft
+                              endif
+                              if ((y1old.le.dw1).and.(y(1).gt.dw1).and.(counter.eq.3)) then
+                                      !debug(1)=y(4)
+                                      !write(6,*) "dv=", e*B*(y(2)-y0)/(4*me)
+                                      !write(6,*) "dvg=", Ed*e*(y(2)-y0)/(2*me*vini)
+                                      yold=sqrt(y(4)**2+y(5)**2)
+                                      theta=ATAN(y(5)/y(4))
+                                      y(4)=sqrt(yold**2+2D0*e*Ed*(y(2)-y0)/me)*cos(theta)
+                                      y(5)=sqrt(yold**2+2D0*e*Ed*(y(2)-y0)/me)*sin(theta)
+                                      debug(2)=y(4)-vini
+                                      Vg(k+p*(l-1))=y(4)
+                                      !dummy=e*(y(2)-y0)/me*(B/4+Ed/vini)
+                                      debug(3)=e*(y(2)-y0)/me*(B/4D0+Ed/((vini)))
+                                      write(6,*) debug(2), debug(3), test
+                                      counter=4
+                                      !write(6,62) "steps=", i
+                                      step=wfTstep
+                                      !write(6,*) "enter field",e*Ed*(y(2)-y0)/(me*vini)
+
+                                      !		dataout(1,3,k)=y(1)
+                                      !		dataout(2,3,k)=y(2)
+                                      !		dataout(3,3,k)=sqrt(y(4)*y(4)+y(5)*y(5))
+                                      !		dataout(4,3,k)=tft
+                                      weintime(3,k+p*(l-1))=tft
+                              endif
+
+                              if ((y1old.le.dw2).and.(y(1).gt.dw2).and.(counter.eq.4)) then
+                                      yold=sqrt(y(4)**2+y(5)**2)
+                                      theta=ATAN(y(5)/y(4))
+                                      y(4)=sqrt(yold**2-2D0*e*Ed*(y(2)-y0)/me)*cos(theta)
+                                      y(5)=sqrt(yold**2-2D0*e*Ed*(y(2)-y0)/me)*sin(theta)
+                                      !write(6,*) "leave field",-e*Ed*(y(2)-y0)/(me*vini)
+                                      counter=5
+                                      !write(6,62) "steps=", i
+                                      step=lowTstep
+                                      !			dataout(1,4,k)=y(1)
+                                      !			dataout(2,4,k)=y(2)
+                                      !			dataout(3,4,k)=sqrt(y(4)*y(4)+y(5)*y(5))
+                                      !			dataout(4,4,k)=tft
+                                      weintime(4,k+p*(l-1))=tft
+                              endif
+                              if ((y1old.le.pos2).and.(y(1).gt.pos2).and.(counter.eq.5)) then
+                                      counter=6
+                                      !write(6,62) "steps=", i
+                                      step=bTstep
+                                      !			dataout(1,5,k)=y(1)
+                                      !			dataout(2,5,k)=y(2)
+                                      !			dataout(3,5,k)=sqrt(y(4)*y(4)+y(5)*y(5))
+                                      !			dataout(4,5,k)=tft
+                                      weintime(5,k+p*(l-1))=tft
+                              endif
+                              if ((y1old.gt.pos2).and.(y(1).le.pos2).and.(counter.eq.6)) then
+                                      counter=7
+                                      !write(6,62) "steps=", i
+                                      step=bTstep
+                              endif
+                              if ((y1old.le.pos2).and.(y(1).gt.pos2).and.(counter.eq.7)) then
+                                      counter=8
+                                      !write(6,62) "steps=", i
+                                      step=lowTstep
+                                      !dataout(1,6,k)=y(1)
+                                      !dataout(2,6,k)=y(2)
+                                      !dataout(3,6,k)=sqrt(y(4)*y(4)+y(5)*y(5))
+                                      !dataout(4,6,k)=tft
+                                      step1=i
+                                      weintime(6,k+p*(l-1))=tft
+                              endif
+                              if((tftold.le.endtime).and.(tft.gt.endtime)) then
+                                      comp(k,l)=y(1)
+                              endif
+
+                              if (counter.eq.1) then 
+                                      Bz=-B
+                              endif 
+                              if (counter.eq.2) then 
+                                      Bz=B
+                              endif 
+                              if (counter.eq.3) then 
+                                      Bz=0D0
+                              endif 
+                              if (counter.eq.4) then 
+                                      !sign of wienfilter should be negative
+                                      Ey=Ed
+                                      !Bz=Ey/(sqrt((vini+(y(2)-y0)*e*B/(4*me))**2+e*Ed*(y(2)-y0)/me))
+                                      Bz=Ed*(1/vini-(y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3)
+     1+((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3))**2)
+
+                                      !Bz=E0/y(4)
+                                      !Bz=Ey/vini
+                              endif
+                              if (counter.eq.5) then 
+                                      Bz=0D0
+                                      Ey=0D0
+                              endif 
+                              if (counter.eq.6) then 
+                                      Bz=B
+                                      Ey=0D0
+                              endif 
+                              if (counter.eq.7) then 
+                                      Bz=-B
+                              endif 
+                              if (counter.eq.8) then 
+                                      Bz=0D0
+                              endif
+                              y1old=y(1)
+                              tftold=tft
+
+                              if (time(6).eq.i) then
+                                      !write(6,*) m,i,time(m)
+                                      !dataout(1,1,k)=y(1)
+                                      !dataout(2,1,k)=y(2)
+                                      !dataout(3,1,k)=sqrt(y(4)*y(4)+y(5)*y(5))
+                                      !dataout(4,1,k)=dATAN(y(5)/y(4))
+                                      !dataout(5,1,k)=tft
+                                      !dataout(6,1,k)=y(4)-vini
+                                      !dataout(7,1,k)=y(1)-x1
+                              endif                
+                      enddo
+                      step2=i
+                      write(6,*) "steps=", step2-step1
+                      if(lowstepcheck.ne.14) then
+                              error=1
+=======
                       if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
                           step=hiTstep
                           if (debugout) write(6,60) counter,0,i
@@ -473,6 +807,7 @@
                           if (debugout) write(6,62) "steps=", i
                           step=wfTstep
                           if (debugout) write(6,*) "enter field",e*Ed*(y(2)-y0)/(me*vini)
+>>>>>>> scaling
                       endif
 
                   case (4)
@@ -546,6 +881,7 @@
                           step=lowTstep
                           counter=8
                           Bz=0D0
+                          timecheck=tft
                           if (debugout) write(6,61) counter,i
                           time(6)=i
                           x1=y(1)
@@ -568,7 +904,7 @@
 
                   if((tftold.le.endtime).and.(tft.gt.endtime)) then
                       comp(k,l)=y(1)
-                      if (debugout) write(6,*) y(1)
+                      write(6,*) y(1)
                   endif
 
                   y1old=y(1)
@@ -600,9 +936,15 @@
       if (error.eq.1) write(6,*) "Invalid Test", lowstepcheck
 
       do test=0,scanl*2
+<<<<<<< HEAD
+              scandx(test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
+              !write(6,*) test, scandx(test)
+              write(14,104) scandata(1:p,1:q,test)-scandata(1,2,test), scandx(test)
+=======
           scandx(test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
           !if (debugout) write(6,*) test, scandx(test)
           write(14,104) scandata(1:p,1:q,test)-scandata((p+1)/2,(q+1)/2,test), scandx(test)
+>>>>>>> scaling
       enddo
       if(minval(scandx(0:scanl*2)).eq.scandx(0).or.minval(scandx(0:scanl*2)).eq.scandx(scanl*2)) then
           write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
@@ -613,7 +955,6 @@
 
       do test=1,1000
           write(11,102) mem(1:2,test,1:p*q)
-          write(12,102) vout(1:2,test,1:p*q)
       enddo
       do test=1,p*q
           write(6,*) Vg(test)
