@@ -373,7 +373,7 @@
               y(5)=(1.00D0+2D0**1*dE/4*(l-(q+1D0)/2D0))*vini*sin(dtheta/2*(k-(p+1D0)/2D0))
 
               write(6,50) k,p,l,q
-50    format(x/,x,i1,'/',i1,x,i1,'/',i1,/)
+50    format(x/,x,i1,'/',i1,x,i1,'/',i1)
               call sset(mxparm,0.0,param,1)
               param(4)=1000000000
               param(10)=1D0 
@@ -568,7 +568,7 @@
 
                   if((tftold.le.endtime).and.(tft.gt.endtime)) then
                       comp(k,l)=y(1)
-                      write(6,*) y(1)
+                      if (debugout) write(6,*) y(1)
                   endif
 
                   y1old=y(1)
