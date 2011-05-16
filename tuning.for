@@ -101,9 +101,9 @@
       common/time/ endoftim
       real*8 divider,endoftim
       integer mxparm,neq,i,ido,p,q,r,k,l,z,m,time(6),lowstepcheck,iold
-      parameter (mxparm=120,neq=6,p=1,q=3,r=101)
+      parameter (mxparm=120,neq=6,p=1,q=3,r=11)
       integer error, ti, scanl,scanprec
-      parameter (scanl=200,scanprec=50)
+      parameter (scanl=400,scanprec=100)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw,dE,dtheta
       parameter (B=.031D0,dw=.5D-1,dE=2.5D-4,dtheta=2D-3)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls
@@ -131,7 +131,7 @@
       hiTstep=lowTstep/1D3          !hi-res step for approaching borders 
 
       do m=1,r
-          percent=1.15D0-(m-(r+1)/2)*.1D-3
+          percent=1D0-(m-(r+1)/2)*1D-1
 
           E0=-(pend*B*vini)/(dw*4D0)*percent    !set E field for WF based on theory
 
