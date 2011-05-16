@@ -11,6 +11,9 @@ bgradient.tuning.3d:bgradient.tuning.3d.for
 	fl32 /Op /4Yb /4Yf /nologo bgradient.tuning.3d.for
 	bgradient.tuning.3d.exe
 	
+EvsPOS:EvsPOS.for
+	fl32 /Op /4Yb /4Yf /nologo EvsPOS.for
+	EvsPOS.exe
 
 foo:foo.for
 	fl32 /Op /4Yb /4Yf /nologo foo.for
