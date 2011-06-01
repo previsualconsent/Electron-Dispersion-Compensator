@@ -99,14 +99,14 @@
       real*8 y1old
       common/time/ endoftim
       real*8 divider,endoftim
-      integer mxparm,neq,i,ido,p,q,r,k,l,m,time(6),lowstepcheck
+      integer mxparm,neq,i,ido,p,q,r,k,l,z,m,time(6),lowstepcheck,iold
       parameter (mxparm=120,neq=6,p=1,q=3,r=11)
-      integer error, ti, scanl,scanprec,midk,midl
+      integer error, ti, scanl,scanprec,midk,midl,cl,cb,cw,ch,ce
       parameter (scanl=400,scanprec=15)
-      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,x1,dw,dE,dtheta
-      parameter (B=3.1D-14,dw=.5D5,dE=2.5D-5,dtheta=2D-4)
-      real*8 pend,pos1,pos2,endtime,step,sls
-      real*8 dw1,dw2,ddw,wfls,bls,yold,theta
+      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw,dE,dtheta
+      parameter (B=3.1D-14,dw=.5D5,dE=5D-5,dtheta=2D-4)
+      real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls
+      real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
       parameter (pend=1D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2)
       real*8 timecheck,percent,outdata(3,r)
@@ -131,12 +131,13 @@
       wfls=wfTstep*vini             !average distance for 1 wfTstep
 
       hiTstep=lowTstep*1D-3          !hi-res step for approaching borders 
-      endTstep=lowTstep*1D-2    !set step size for final section
+      endTstep=lowTstep*1D-2
 
       do m=1,r
-          percent=1D0-(m-(r+1D0)/2D0)*1D-2 !try different percents
+          percent=1D0 + (m-(r+1D0)/2D0)*6D-2
+          write(6,*) "percent:", percent
 
-          E0=-(pend*B*vini)/(dw*4D0)*percent    !set E field for WF based on theory
+          E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
 
           !some distance calculations
           pos1=(pend-dw)/4D0 !first B-field border
@@ -176,6 +177,10 @@
           param(10)=1.0   
           tft=0D0
           i=0
+          cl=0
+          ch=0
+          cb=0
+          cw=0
 
           do while(counter.ne.8.or.y(1).lt.pend) !loop until the electron reaches the target
 
@@ -187,6 +192,10 @@
 
 60    format(x,'counter=',i1,x,'flag=',i1,x,'steps=',i10)
 61    format(x,'counter=',i1,8x,'steps=',i10)
+              if (step.eq.lowTstep) cl=cl+1
+              if (step.eq.hiTstep) ch=ch+1
+              if (step.eq.bTstep) cb=cb+1
+              if (step.eq.wfTstep) cw=cw+1
 
               select case (counter)
               case (0)
@@ -330,6 +339,7 @@
                       timecheck=tft+lowTstep*scanprec*3
                       if (debugout) write(6,61) counter,i
                       time(6)=i
+                      x1=y(1)
                   endif
               end select
 
@@ -343,6 +353,7 @@
               tftold=tft
           enddo
 
+          write(6,*) "cl:",cl," ch:",ch," cb:",cb," cw:",cw
           ido=3
           endtime=tft
           call divprk(ido,neq,fcn,t,tend,tol,param,y) !close out ODE workspace
@@ -356,6 +367,7 @@
           do l=1,q
               do k=1,p
                   !reset variables for next run
+                  ce=0
                   test=0
                   ido=1
                   t=0D0
@@ -463,7 +475,7 @@
 
                               counter=4
                               Ey=E0
-                              Bz=Ed*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me))**2*(1/vini**6))*1D0)
+                              Bz=Ed*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me))**2*(1/vini**6))*percent)
                               if (debugout) write(6,62) "steps=", i
                               step=wfTstep
                               if (debugout) write(6,*) "enter field",e*Ed*(y(2)-y0)/(me*vini)
@@ -559,6 +571,7 @@
                               ti=ti+1
                           endif
                       endif
+                      if(counter.eq.8) ce=ce+1
 
                       if((tftold.le.endtime).and.(tft.gt.endtime)) then
                           if (debugout) write(6,*) y(1)
@@ -576,6 +589,7 @@
                   endif
                   lowstepcheck=0
                   if (debugout) write(6,*) "end step=", i
+                  write(6,*) ce
 
                   ido=3
 
