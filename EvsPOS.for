@@ -103,7 +103,7 @@
       parameter (mxparm=120,neq=6,p=1,q=3,r=11)
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
-      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,x1,dw,dE,dtheta
+      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dtheta
       parameter (B=3.1D-14,dw=.5D5,dE=2.5D-5,dtheta=2D-4)
       real*8 pend,pos1,pos2,endtime,step,sls
       real*8 dw1,dw2,ddw,wfls,bls,yold,theta
@@ -350,7 +350,6 @@
 
 
           !first electron done, do the rest
-          Ed=E0 
           do l=1,q
               do k=1,p
                   !reset variables for next run
@@ -381,13 +380,14 @@
 
 62    format(18x,A,i10)
 
+                  ! loop until the scan has finished
                   do while(tft.le.timecheck+2D0*scanl*lowTstep*scanprec)
                       i=i+1
                       tft=tft+step
                       tend=tft  
                       call divprk(ido,neq,fcn,t,tend,tol,param,y)
-                      if (param(31)/param(32).lt.1D10) write(6,*) param(31:22)
 
+                      !same switch as above
                       select case (counter)
                       case (0)
                           Bz=0D0
@@ -446,20 +446,24 @@
                           endif
                           if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
                               !if (debugout) write(6,*) "dv=", e*B*(y(2)-y0)/(4*me)
-                              !if (debugout) write(6,*) "dvg=", Ed*e*(y(2)-y0)/(2*me*vini)
+                              !if (debugout) write(6,*) "dvg=", E0*e*(y(2)-y0)/(2*me*vini)
 
+                              !ENTERING WIEN FILTER
+                              !calculate old velocity and angle
                               yold=sqrt(y(4)**2+y(5)**2)
                               theta=ATAN(y(5)/y(4))
 
-                              y(4)=sqrt(yold**2+2D0*Ed*e*(y(2)-y0)/me)*cos(theta)
-                              y(5)=sqrt(yold**2+2D0*Ed*e*(y(2)-y0)/me)*sin(theta)
+                              !set new velocity based on calculated energy change
+                              y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)*cos(theta)
+                              y(5)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)*sin(theta)
 
                               counter=4
                               Ey=E0
-                              Bz=Ed*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*Ed))/(4D0*me))**2*(1/vini**6))*1D0)
+                              !Matched B field. For particle traveling strait through, the field should be balanced
+                              Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
                               if (debugout) write(6,62) "steps=", i
                               step=wfTstep
-                              if (debugout) write(6,*) "enter field",e*Ed*(y(2)-y0)/(me*vini)
+                              if (debugout) write(6,*) "enter field",e*E0*(y(2)-y0)/(me*vini)
                           endif
 
                       case (4)
@@ -474,11 +478,12 @@
                               if (debugout) write(6,60) counter,4, i
                           endif
                           if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
+                              !calculate velocity change for leaving WF
                               yold=sqrt(y(4)**2+y(5)**2)
                               theta=ATAN(y(5)/y(4))
-                              y(4)=sqrt(yold**2-2D0*Ed*e*(y(2)-y0)/me)*cos(theta)
-                              y(5)=sqrt(yold**2-2D0*Ed*e*(y(2)-y0)/me)*sin(theta)
-                              if (debugout) write(6,*) "leave field",-e*Ed*(y(2)-y0)/(me*vini)
+                              y(4)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)*cos(theta)
+                              y(5)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)*sin(theta)
+                              if (debugout) write(6,*) "leave field",-e*E0*(y(2)-y0)/(me*vini)
                               counter=5
                               Bz=0D0
                               Ey=0D0
@@ -542,7 +547,10 @@
                           boundarycheck=boundarycheck+1
                           if (debugout) write(6,60) counter, 7, i
                       endif
+
+                      !taking time snapshots to calculate widths
                       if ((tft.gt.timecheck+lowTstep*scanprec*ti).and.(tftold.le.timecheck+lowTstep*scanprec*ti)) then
+
                           scandata(k,l,ti)=y(1)
 
                           !if (debugout) write(6,*) ti,counter, tft, scandata(k,l,ti)
@@ -551,22 +559,26 @@
                           endif
                       endif
 
+                      !write out predicted locatoin of focus
                       if((tftold.le.endtime).and.(tft.gt.endtime)) then
                           if (debugout) write(6,*) y(1)
                       endif
 
+                      !store info from last run
                       y1old=y(1)
                       tftold=tft
 
                   enddo
+
+                  !if not all the boundaries were hit, throw an error
                   if(boundarycheck.ne.14) then
                       error=1
                   endif
                   boundarycheck=0
                   if (debugout) write(6,*) "end step=", i
 
+                  !close out ODE workspace
                   ido=3
-
                   call divprk(ido,neq,fcn,t,tend,tol,param,y)
 
                   tft=0d0
@@ -574,22 +586,27 @@
               enddo
           enddo
 
+          !calculate width of beam at diff timestamps
           do test=0,scanl*2
               scandx(m,test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
               !if (debugout) write(6,*) test, scandx(m,test)
           enddo
+          !if minimum occurs at end of scan, print error
           if(minval(scandx(m,0:scanl*2)).eq.scandx(m,scanl*2)) then
               write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
           endif
 
+          !if minimum occurs at the begninning of scan, print error
           if(minval(scandx(m,0:scanl*2)).eq.scandx(m,0)) then
               write(6,*) "Does not converge"
           endif
 
+          !calculate minimum width
           write(6,*) "dx=", minval(scandx(m,0:scanl*2))
           outdata(1,m)=percent
           outdata(2,m)=minval(scandx(m,0:scanl*2))
 
+          !find the location of the minimum width
           do test=0,scanl*2
               if (minval(scandx(m,0:scanl*2)).eq.scandx(m,test)) then
                   outdata(3,m)=scandata(midk,midl,test)
@@ -600,12 +617,13 @@
           if (error.eq.1) write(6,*) "Invalid Test", boundarycheck
       enddo
 
+      !write out the data
       do test=1,r
-          write(11,101) outdata(1:3,test)
+          write(11,101) outdata(1:3,test) !percent, dx, pos
       enddo
       do test=0,scanl*2
-          write(14,104) scandx(1:r,test)
-      enddo
+          write(14,104) scandx(1:r,test) !shows how the pulse width of each run
+      enddo                              !changed over time
 
 
 101   format(3E15.7)
