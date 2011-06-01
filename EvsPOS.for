@@ -98,8 +98,8 @@
       integer counter,test
       real*8 y1old
       common/time/ endoftim
-      real*8 divider,endoftim
-      integer mxparm,neq,i,ido,p,q,r,k,l,m,time(6),lowstepcheck
+      real*8 endoftim
+      integer mxparm,neq,i,ido,p,q,r,k,l,m,,boundarycheck
       parameter (mxparm=120,neq=6,p=1,q=3,r=11)
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
@@ -188,32 +188,35 @@
 60    format(x,'counter=',i1,x,'flag=',i1,x,'steps=',i10)
 61    format(x,'counter=',i1,8x,'steps=',i10)
 
-              select case (counter)
-              case (0)
+              select case (counter) !switch on counter- this reduced long if statements
+                                    !each case checks to see if the particle is getting
+                                    !close to the next barrier. If so, reduce the step
+                                    !size. When it crosses the barrier, hand off to 
+                                    !next case. boundary check is used for error checking
+              case (0) 
                   Bz=0D0
                   Ey=0D0
                   if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
                       step=hiTstep
                       if (debugout) write(6,60) counter,0,i
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
                       if (debugout) write(6,61) counter,i
                       counter=1
                       step=bTstep
-                      time(1)=i
                       Bz=-B
                   endif
               case (1)
                   if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
                       if (debugout) write(6,60) counter, 1, i
                       step=lowTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
                       if (debugout) write(6,60) counter, 1, i
                       step=hiTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
                       counter=2
@@ -225,25 +228,24 @@
                   if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
                       step=hiTstep
                       if (debugout) write(6,60) counter,2,i
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
                       step=lowTstep
                       if (debugout) write(6,60) counter,2,i
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
                       step=lowTstep
                       counter=3
                       Bz=0D0
                       if (debugout) write(6,61) counter,i
-                      time(2)=i
                   endif
 
               case (3)
                   if ((y1old.le.dw1-sls).and.(y(1).gt.dw1-sls)) then
                       step=hiTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter,3, i
                   endif
                   if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
@@ -254,8 +256,7 @@
                       if (debugout) write(6,*) Ey,Bz*y(4)
                       step=wfTstep
                       if (debugout) write(6,61) counter,i
-                      time(3)=i
-                      y0=y(2)
+                      y0=y(2)                   ! y0 has the center of the WF
                       if (debugout) write(6,*) "y0=",y0
                   endif
 
@@ -263,12 +264,12 @@
 
                   if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
                       step=lowTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter,4, i
                   endif
                   if ((y1old.le.dw2-sls).and.(y(1).gt.dw2-sls)) then
                       step=hiTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter,4, i
                   endif
                   if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
@@ -277,13 +278,12 @@
                       Bz=0D0
                       Ey=0D0
                       if (debugout) write(6,61) counter,i
-                      time(4)=i
                   endif
 
               case (5)
                   if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                       step=hiTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 6, i
                   endif
                   if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
@@ -292,18 +292,17 @@
                       Bz=B
                       Ey=0D0
                       if (debugout) write(6,61) counter,i
-                      time(5)=i
                   endif
 
               case (6)
                   if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
                       step=lowTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 5, i
                   endif
                   if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
                       step=hiTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 5, i
                   endif
                   if ((y1old.gt.pos2).and.(y(1).le.pos2)) then
@@ -315,30 +314,30 @@
               case (7)
                   if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
                       step=lowTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 6, i
                   endif
                   if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                       step=hiTstep
-                      lowstepcheck=lowstepcheck+1
+                      boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 6, i
                   endif
                   if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
                       step=lowTstep
                       counter=8
                       Bz=0D0
-                      timecheck=tft+lowTstep*scanprec*3
+                      timecheck=tft+lowTstep*scanprec*3 !grabs a timestamp from the beginning of region 8
                       if (debugout) write(6,61) counter,i
-                      time(6)=i
                   endif
               end select
-
+              !lower step size while approaching final region.
               if ((tft.gt.endoftim-lowTstep).and.(tftold.le.endoftim-lowTstep)) then
                   step=hiTstep
-                  lowstepcheck=lowstepcheck+1
+                  boundarycheck=boundarycheck+1
                   if (debugout) write(6,60) counter, 7, i
               endif
 
+              !store info from last run
               y1old=y(1)
               tftold=tft
           enddo
@@ -347,12 +346,11 @@
           endtime=tft
           call divprk(ido,neq,fcn,t,tend,tol,param,y) !close out ODE workspace
 
-          if(debugout) write(6,*) "Lowstepcheck=",lowstepcheck
+          if(debugout) write(6,*) "boundarycheck=",boundarycheck
 
 
           !first electron done, do the rest
           Ed=E0 
-          divider=endtime/1000D0 !sets disp.dat to 1000 points
           do l=1,q
               do k=1,p
                   !reset variables for next run
@@ -363,7 +361,7 @@
                   Bz=0.
                   Ey=0.
                   counter=0
-                  lowstepcheck=0
+                  boundarycheck=0
                   do i=1,neq
                       y(i)=0d0
                   enddo
@@ -384,9 +382,6 @@
 62    format(18x,A,i10)
 
                   do while(tft.le.timecheck+2D0*scanl*lowTstep*scanprec)
-                      if ((test*divider).le.tft.and.test.lt.999) then
-                          test=test+1
-                      endif
                       i=i+1
                       tft=tft+step
                       tend=tft  
@@ -400,25 +395,24 @@
                           if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
                               step=hiTstep
                               if (debugout) write(6,60) counter,0,i
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
                               if (debugout) write(6,61) counter,i
                               counter=1
                               Bz=-B
                               step=bTstep
-                              time(1)=i
                           endif
                       case (1)
                           if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
                               if (debugout) write(6,60) counter, 1, i
                               step=lowTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
                               if (debugout) write(6,60) counter, 1, i
                               step=hiTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
                               counter=2
@@ -430,25 +424,24 @@
                           if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
                               step=hiTstep
                               if (debugout) write(6,60) counter,2,i
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
                               step=lowTstep
                               if (debugout) write(6,60) counter,2,i
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
                               step=lowTstep
                               counter=3
                               if (debugout) write(6,61) counter,i
-                              time(2)=i
                               Bz=0D0
                           endif
 
                       case (3)
                           if ((y1old.le.dw1-sls).and.(y(1).gt.dw1-sls)) then
                               step=hiTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter,3, i
                           endif
                           if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
@@ -472,12 +465,12 @@
                       case (4)
                           if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
                               step=lowTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter,4, i
                           endif
                           if ((y1old.le.dw2-sls).and.(y(1).gt.dw2-sls)) then
                               step=hiTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter,4, i
                           endif
                           if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
@@ -496,7 +489,7 @@
                       case (5)
                           if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                               step=hiTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 6, i
                           endif
                           if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
@@ -505,18 +498,17 @@
                               Bz=B
                               Ey=0D0
                               if (debugout) write(6,61) counter,i
-                              time(5)=i
                           endif
 
                       case (6)
                           if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
                               step=lowTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 5, i
                           endif
                           if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
                               step=hiTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 5, i
                           endif
                           if ((y1old.gt.pos2).and.(y(1).le.pos2)) then
@@ -528,12 +520,12 @@
                       case (7)
                           if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
                               step=lowTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 6, i
                           endif
                           if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                               step=hiTstep
-                              lowstepcheck=lowstepcheck+1
+                              boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 6, i
                           endif
                           if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
@@ -541,14 +533,13 @@
                               counter=8
                               Bz=0D0
                               if (debugout) write(6,61) counter,i
-                              time(6)=i
                               x1=y(1)
                           endif
 
                       end select
                       if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
                           !step=hiTstep
-                          lowstepcheck=lowstepcheck+1
+                          boundarycheck=boundarycheck+1
                           if (debugout) write(6,60) counter, 7, i
                       endif
                       if ((tft.gt.timecheck+lowTstep*scanprec*ti).and.(tftold.le.timecheck+lowTstep*scanprec*ti)) then
@@ -567,14 +558,11 @@
                       y1old=y(1)
                       tftold=tft
 
-                      if (time(6).eq.i) then
-                          !if (debugout) write(6,*) m,i,time(m)
-                      endif                
                   enddo
-                  if(lowstepcheck.ne.14) then
+                  if(boundarycheck.ne.14) then
                       error=1
                   endif
-                  lowstepcheck=0
+                  boundarycheck=0
                   if (debugout) write(6,*) "end step=", i
 
                   ido=3
@@ -609,7 +597,7 @@
           enddo
           
 
-          if (error.eq.1) write(6,*) "Invalid Test", lowstepcheck
+          if (error.eq.1) write(6,*) "Invalid Test", boundarycheck
       enddo
 
       do test=1,r
