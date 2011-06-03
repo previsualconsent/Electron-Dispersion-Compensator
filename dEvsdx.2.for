@@ -16,8 +16,8 @@
       common/worksp/rwksp
       real*8 rwksp(43592)
       call iwkin(43592)
-      OPEN(UNIT=11,FILE='tuning.2.dat',type='replace')
-      OPEN(UNIT=14,FILE='width.2.dat',type='replace')        
+      OPEN(UNIT=11,FILE='tuning.dat',type='replace')
+      OPEN(UNIT=14,FILE='width.dat',type='replace')        
 
       !write(6,*) ' stop integration at (micro s):'
       !read(*,*) endoftim
@@ -108,7 +108,7 @@
       real*8 pend,pos1,pos2,endtime,step,sls
       real*8 dw1,dw2,ddw,wfls,bls,yold,theta
       parameter (pend=1D5,ddw=1D-4)
-      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2)
+      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2),xf(p,q)
       real*8 timecheck,percent,outdata(3,r)
       logical debugout
       parameter (debugout=.false.)
@@ -325,7 +325,6 @@
                       step=lowTstep
                       counter=8
                       Bz=0D0
-                      timecheck=tft+lowTstep*scanprec*3 !grabs a timestamp from the beginning of region 8
                       if (debugout) write(6,61) counter,i
                   endif
               end select
@@ -380,7 +379,7 @@
 62    format(18x,A,i10)
 
                   ! loop until the scan has finished
-                  do while(tft.le.timecheck+2D0*scanl*lowTstep*scanprec)
+                  do while(tft.le.endtime)
                       i=i+1
                       tft=tft+step
                       tend=tft  
@@ -542,20 +541,9 @@
 
                       end select
                       if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
-                          !step=hiTstep
+                          step=hiTstep
                           boundarycheck=boundarycheck+1
                           if (debugout) write(6,60) counter, 7, i
-                      endif
-
-                      !taking time snapshots to calculate widths
-                      if ((tft.gt.timecheck+lowTstep*scanprec*ti).and.(tftold.le.timecheck+lowTstep*scanprec*ti)) then
-
-                          scandata(k,l,ti)=y(1)
-
-                          !if (debugout) write(6,*) ti,counter, tft, scandata(k,l,ti)
-                          if (ti.ne.scanl*2) then
-                              ti=ti+1
-                          endif
                       endif
 
                       !write out predicted locatoin of focus
@@ -575,6 +563,7 @@
                   endif
                   boundarycheck=0
                   if (debugout) write(6,*) "end step=", i
+                  xf(k,l)=y(1)
 
                   !close out ODE workspace
                   ido=3
@@ -585,35 +574,13 @@
               enddo
           enddo
 
-          !calculate width of beam at diff timestamps
-          do test=0,scanl*2
-              scandx(m,test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
-              !if (debugout) write(6,*) test, scandx(m,test)
-          enddo
-          !if minimum occurs at end of scan, print error
-          if(minval(scandx(m,0:scanl*2)).eq.scandx(m,scanl*2)) then
-              write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
-          endif
-
-          !if minimum occurs at the begninning of scan, print error
-          if(minval(scandx(m,0:scanl*2)).eq.scandx(m,0)) then
-              write(6,*) "Does not converge"
-          endif
-
           !calculate minimum width
-          write(6,*) "dx=", minval(scandx(m,0:scanl*2))
+
+          write(6,*) "dx=", maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
           outdata(1,m)=dEm
-          outdata(2,m)=minval(scandx(m,0:scanl*2))
+          outdata(2,m)=maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
 
-          !find the location of the minimum width
-          do test=0,scanl*2
-              if (minval(scandx(m,0:scanl*2)).eq.scandx(m,test)) then
-                  outdata(3,m)=scandata(midk,midl,test)
-              endif
-          enddo
-          
-
-          if (error.eq.1) write(6,*) "Invalid Test", boundarycheck
+          if (error.eq.1) write(6,*) "Invalid Test"
       enddo
 
       !write out the data

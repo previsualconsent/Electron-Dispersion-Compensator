@@ -100,15 +100,15 @@
       common/time/ endoftim
       real*8 endoftim
       integer mxparm,neq,i,ido,p,q,r,k,l,m,boundarycheck
-      parameter (mxparm=120,neq=6,p=3,q=3,r=11)
+      parameter (mxparm=120,neq=6,p=3,q=3,r=101)
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
-      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta
-      parameter (B=3.1D-14,dw=.5D5,dE=2.5D-5,dtheta=2D-4)
+      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta,dthetam
+      parameter (B=3.1D-14,dw=.8D5,dE=2.5D-5,dtheta=2D-4)
       real*8 pend,pos1,pos2,endtime,step,sls
       real*8 dw1,dw2,ddw,wfls,bls,yold,theta
       parameter (pend=1D5,ddw=1D-4)
-      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2)
+      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2),xf(p,q)
       real*8 timecheck,percent,outdata(3,r)
       logical debugout
       parameter (debugout=.false.)
@@ -131,10 +131,10 @@
       wfls=wfTstep*vini             !average distance for 1 wfTstep
 
       hiTstep=lowTstep*1D-3          !hi-res step for approaching borders 
-      endTstep=lowTstep*1D-2    !set step size for final section
+      endTstep=lowTstep*1D-3    !set step size for final section
 
       do m=1,r
-          dEm=dE**(1+(m-(r+1D0)/2D0)*1D-2)
+          dthetam=dtheta*(m-1D0)*1D-2
           E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
 
           !some distance calculations
@@ -325,7 +325,6 @@
                       step=lowTstep
                       counter=8
                       Bz=0D0
-                      timecheck=tft+lowTstep*scanprec*3 !grabs a timestamp from the beginning of region 8
                       if (debugout) write(6,61) counter,i
                   endif
               end select
@@ -365,8 +364,8 @@
                   enddo
 
                   !sets energy spread to dE and angle spread to dtheta
-                  y(4)=(1.00D0+dEm/4D0*(l-midl))*vini*cos(dtheta/2D0*(k-midk))
-                  y(5)=(1.00D0+dEm/4D0*(l-midl))*vini*sin(dtheta/2D0*(k-midk))
+                  y(4)=(1.00D0+dE/4D0*(l-midl))*vini*cos(dthetam/2D0*(k-midk))
+                  y(5)=(1.00D0+dE/4D0*(l-midl))*vini*sin(dthetam/2D0*(k-midk))
 
                   write(6,50) k,p,l,q,m,r
 50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3)
@@ -380,7 +379,7 @@
 62    format(18x,A,i10)
 
                   ! loop until the scan has finished
-                  do while(tft.le.timecheck+2D0*scanl*lowTstep*scanprec)
+                  do while(tft.le.endtime)
                       i=i+1
                       tft=tft+step
                       tend=tft  
@@ -542,20 +541,9 @@
 
                       end select
                       if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
-                          !step=hiTstep
+                          step=endTstep
                           boundarycheck=boundarycheck+1
                           if (debugout) write(6,60) counter, 7, i
-                      endif
-
-                      !taking time snapshots to calculate widths
-                      if ((tft.gt.timecheck+lowTstep*scanprec*ti).and.(tftold.le.timecheck+lowTstep*scanprec*ti)) then
-
-                          scandata(k,l,ti)=y(1)
-
-                          !if (debugout) write(6,*) ti,counter, tft, scandata(k,l,ti)
-                          if (ti.ne.scanl*2) then
-                              ti=ti+1
-                          endif
                       endif
 
                       !write out predicted locatoin of focus
@@ -575,6 +563,7 @@
                   endif
                   boundarycheck=0
                   if (debugout) write(6,*) "end step=", i
+                  xf(k,l)=y(1)
 
                   !close out ODE workspace
                   ido=3
@@ -585,35 +574,13 @@
               enddo
           enddo
 
-          !calculate width of beam at diff timestamps
-          do test=0,scanl*2
-              scandx(m,test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
-              !if (debugout) write(6,*) test, scandx(m,test)
-          enddo
-          !if minimum occurs at end of scan, print error
-          if(minval(scandx(m,0:scanl*2)).eq.scandx(m,scanl*2)) then
-              write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
-          endif
-
-          !if minimum occurs at the begninning of scan, print error
-          if(minval(scandx(m,0:scanl*2)).eq.scandx(m,0)) then
-              write(6,*) "Does not converge"
-          endif
-
           !calculate minimum width
-          write(6,*) "dx=", minval(scandx(m,0:scanl*2))
-          outdata(1,m)=dEm
-          outdata(2,m)=minval(scandx(m,0:scanl*2))
 
-          !find the location of the minimum width
-          do test=0,scanl*2
-              if (minval(scandx(m,0:scanl*2)).eq.scandx(m,test)) then
-                  outdata(3,m)=scandata(midk,midl,test)
-              endif
-          enddo
-          
+          write(6,*) "dx=", maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
+          outdata(1,m)=dthetam
+          outdata(2,m)=maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
 
-          if (error.eq.1) write(6,*) "Invalid Test", boundarycheck
+          if (error.eq.1) write(6,*) "Invalid Test"
       enddo
 
       !write out the data

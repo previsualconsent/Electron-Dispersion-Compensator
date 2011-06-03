@@ -16,8 +16,8 @@
       common/worksp/rwksp
       real*8 rwksp(43592)
       call iwkin(43592)
-      OPEN(UNIT=11,FILE='tuning.2.dat',type='replace')
-      OPEN(UNIT=14,FILE='width.2.dat',type='replace')        
+      OPEN(UNIT=11,FILE='tuning.dat',type='replace')
+      OPEN(UNIT=14,FILE='width.dat',type='replace')        
 
       !write(6,*) ' stop integration at (micro s):'
       !read(*,*) endoftim
@@ -103,7 +103,7 @@
       parameter (mxparm=120,neq=6,p=3,q=3,r=11)
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
-      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta
+      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta,dthetam
       parameter (B=3.1D-14,dw=.5D5,dE=2.5D-5,dtheta=2D-4)
       real*8 pend,pos1,pos2,endtime,step,sls
       real*8 dw1,dw2,ddw,wfls,bls,yold,theta
@@ -134,7 +134,7 @@
       endTstep=lowTstep*1D-2    !set step size for final section
 
       do m=1,r
-          dEm=dE**(1+(m-(r+1D0)/2D0)*1D-2)
+          dthetam=dtheta**(1+(m-(r+1D0)/2D0)*1D-2)
           E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
 
           !some distance calculations
@@ -365,8 +365,8 @@
                   enddo
 
                   !sets energy spread to dE and angle spread to dtheta
-                  y(4)=(1.00D0+dEm/4D0*(l-midl))*vini*cos(dtheta/2D0*(k-midk))
-                  y(5)=(1.00D0+dEm/4D0*(l-midl))*vini*sin(dtheta/2D0*(k-midk))
+                  y(4)=(1.00D0+dE/4D0*(l-midl))*vini*cos(dthetam/2D0*(k-midk))
+                  y(5)=(1.00D0+dE/4D0*(l-midl))*vini*sin(dthetam/2D0*(k-midk))
 
                   write(6,50) k,p,l,q,m,r
 50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3)
@@ -602,7 +602,7 @@
 
           !calculate minimum width
           write(6,*) "dx=", minval(scandx(m,0:scanl*2))
-          outdata(1,m)=dEm
+          outdata(1,m)=dthetam
           outdata(2,m)=minval(scandx(m,0:scanl*2))
 
           !find the location of the minimum width
