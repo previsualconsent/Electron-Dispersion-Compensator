@@ -99,17 +99,17 @@
       real*8 y1old
       common/time/ endoftim
       real*8 endoftim
-      integer mxparm,neq,i,ido,p,q,r,k,l,m,boundarycheck
-      parameter (mxparm=120,neq=6,p=3,q=3,r=101)
+      integer mxparm,neq,i,ido,p,q,r,s,k,l,m,n,boundarycheck
+      parameter (mxparm=120,neq=6,p=3,q=3,r=100,s=100)
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
-      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta
+      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta,dthetam
       parameter (B=3.1D-14,dw=.9D5,dE=2.5D-5,dtheta=2D-5)
       real*8 pend,pos1,pos2,endtime,step,sls
       real*8 dw1,dw2,ddw,wfls,bls,yold,theta
       parameter (pend=1D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2),xf(p,q)
-      real*8 timecheck,percent,outdata(2,r)
+      real*8 timecheck,percent,outdata(3,r*s)
       logical debugout
       parameter (debugout=.false.)
       
@@ -134,8 +134,10 @@
       endTstep=lowTstep*1D-3    !set step size for final section
 
       do m=1,r
+        do n=1,s
           !dEm=dE**(1+(m-(r+1D0)/2D0)*1D-2)
-          dEm=dE*2D0+m*dE*.25D0
+          dthetam=dtheta*(n-1D0)*5D-2
+          dEm=dE*(m-1D0)*5D-2
           E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
 
           !some distance calculations
@@ -365,11 +367,11 @@
                   enddo
 
                   !sets energy spread to dE and angle spread to dtheta
-                  y(4)=(1.00D0+dEm/4D0*(l-midl))*vini*cos(dtheta/2D0*(k-midk))
-                  y(5)=(1.00D0+dEm/4D0*(l-midl))*vini*sin(dtheta/2D0*(k-midk))
+                  y(4)=(1.00D0+dEm/4D0*(l-midl))*vini*cos(dthetam/2D0*(k-midk))
+                  y(5)=(1.00D0+dEm/4D0*(l-midl))*vini*sin(dthetam/2D0*(k-midk))
 
-                  write(6,50) k,p,l,q,m,r,dEm
-50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3," dEm=",E15.7)
+                  write(6,50) k,p,l,q,m,r,n,s
+50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3,x,i3,'/',i3)
                   call sset(mxparm,0.0,param,1)
                   param(4)=1000000000
                   param(10)=1D0 
@@ -578,16 +580,21 @@
           !calculate minimum width
 
           write(6,*) "dx=", maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
-          outdata(1,m)=dEm
-          outdata(2,m)=maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
+          write(6,*) "dE=",dEm
+          write(6,*) "dtheta=",dthetam
+          outdata(1,m+(n-1)*r)=dEm
+          outdata(2,m+(n-1)*r)=dthetam
+          outdata(3,m+(n-1)*r)=maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
 
           if (error.eq.1) write(6,*) "Invalid Test"
-      enddo
+        enddo
 
-      !write out the data
-      do test=1,r
-          write(11,101) outdata(1:2,test) !percent, dx, pos
       enddo
+        !write out the data
+        do test=1,r*s
+          write(11,101) outdata(1:3,test) 
+
+        enddo
       do test=0,scanl*2
           write(14,104) scandx(1:r,test) !shows how the pulse width of each run
       enddo                              !changed over time

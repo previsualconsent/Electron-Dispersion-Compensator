@@ -35,6 +35,10 @@ d0vsdx.2:d0vsdx.2.for
 	fl32 /Op /4Yb /4Yf /nologo d0vsdx.2.for
 	d0vsdx.2.exe
 
+dEvsd0vsdx:dEvsd0vsdx.for
+	fl32 /Op /4Yb /4Yf /nologo dEvsd0vsdx.for
+	dEvsd0vsdx.exe
+
 foo:foo.for
 	fl32 /Op /4Yb /4Yf /nologo foo.for
 	foo.exe

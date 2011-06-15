@@ -104,12 +104,12 @@
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta,dthetam
-      parameter (B=3.1D-14,dw=.8D5,dE=2.5D-5,dtheta=2D-4)
+      parameter (B=3.1D-14,dw=.4D5,dE=2.5D-5,dtheta=2D-4)
       real*8 pend,pos1,pos2,endtime,step,sls
       real*8 dw1,dw2,ddw,wfls,bls,yold,theta
-      parameter (pend=1D5,ddw=1D-4)
+      parameter (pend=.5D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2),xf(p,q)
-      real*8 timecheck,percent,outdata(3,r)
+      real*8 timecheck,percent,outdata(2,r)
       logical debugout
       parameter (debugout=.false.)
       
@@ -367,8 +367,8 @@
                   y(4)=(1.00D0+dE/4D0*(l-midl))*vini*cos(dthetam/2D0*(k-midk))
                   y(5)=(1.00D0+dE/4D0*(l-midl))*vini*sin(dthetam/2D0*(k-midk))
 
-                  write(6,50) k,p,l,q,m,r
-50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3)
+                  write(6,50) k,p,l,q,m,r,dthetam
+50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3," theta=",E13.4)
                   call sset(mxparm,0.0,param,1)
                   param(4)=1000000000
                   param(10)=1D0 
@@ -532,7 +532,7 @@
                               if (debugout) write(6,60) counter, 6, i
                           endif
                           if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
-                              step=endTstep
+                              step=lowTstep
                               counter=8
                               Bz=0D0
                               if (debugout) write(6,61) counter,i
@@ -585,7 +585,7 @@
 
       !write out the data
       do test=1,r
-          write(11,101) outdata(1:3,test) !percent, dx, pos
+          write(11,101) outdata(1:2,test) !percent, dx, pos
       enddo
       do test=0,scanl*2
           write(14,104) scandx(1:r,test) !shows how the pulse width of each run
