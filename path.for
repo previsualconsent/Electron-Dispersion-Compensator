@@ -108,7 +108,7 @@
       parameter (scanl=100,scanprec=50)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw,dE,dtheta
-      parameter (B=.031D0,dw=.5D-1,dE=2.5D-4,dtheta=2D-3)
+      parameter (B=3.1D-14,dw=.9D5,dE=2.5D-5,dtheta=4D-4)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
@@ -116,7 +116,7 @@
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
       real*8 timecheck
       logical debugout
-      parameter (debugout=.false.)
+      parameter (debugout=.true.)
       
       external fcn,divprk,sset
       ! !run test electron to get information about path
@@ -127,13 +127,13 @@
       lowTstep=endoftim/100000      !low precision time step
       sls=lowTstep*vini             !average distance for 1 lowTstep
 
-      bTstep=lowTstep*1D1           !time step for B-fields
-      bls=bTstep*vini               !average distance of 1 bTstep
-
-      wfTstep=lowTstep*.1D2         !time step for WF
-      wfls=wfTstep*vini             !average distance for 1 wfTstep
-
-      hiTstep=lowTstep/1D3          !hi-res step for approaching borders 
+      bTstep=lowTstep*1D1   !time step for B-fields
+      bls=bTstep*vini       !average distance of 1 bTstep
+                                                                  
+      wfTstep=lowTstep*1D2  !time step for WF
+      wfls=wfTstep*vini     !average distance for 1 wfTstep
+                                                                  
+      hiTstep=lowTstep*1D-3 !hi-res step for approaching borders 
 
       E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
 
@@ -369,8 +369,8 @@
               enddo
               
               !sets energy spread to dE and angle spread to dtheta
-              y(4)=(1.00D0+2D0**1*dE/4*(l-(q+1D0)/2D0))*vini*cos(dtheta/2*(k-(p+1D0)/2D0))
-              y(5)=(1.00D0+2D0**1*dE/4*(l-(q+1D0)/2D0))*vini*sin(dtheta/2*(k-(p+1D0)/2D0))
+              y(4)=(1.00D0+2D0**1*dE/4D0*(l-(q+1D0)/2D0))*vini*cos(dtheta/2D0*(k-(p+1D0)/2D0))
+              y(5)=(1.00D0+2D0**1*dE/4D0*(l-(q+1D0)/2D0))*vini*sin(dtheta/2D0*(k-(p+1D0)/2D0))
 
               write(6,50) k,p,l,q
 50    format(x/,x,i1,'/',i1,x,i1,'/',i1)
@@ -383,7 +383,7 @@
 
 62    format(18x,A,i10)
 
-              do while(tft.le.timecheck+2D0*scanl*lowTstep*scanprec)
+              do while(tft.le.endtime)
                   if ((test*divider).le.tft.and.test.lt.999) then
                       test=test+1
                       mem(1,test,k+p*(l-1))=y(1)
@@ -553,23 +553,23 @@
 
                   end select
                   if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
-                      !step=hiTstep
+                      step=hiTstep
                       lowstepcheck=lowstepcheck+1
                       if (debugout) write(6,60) counter, 7, i
                   endif
-                  if ((tft.gt.timecheck+lowTstep*scanprec*ti).and.(tftold.le.timecheck+lowTstep*scanprec*ti)) then
-                      scandata(k,l,ti)=y(1)
+                  !if ((tft.gt.timecheck+lowTstep*scanprec*ti).and.(tftold.le.timecheck+lowTstep*scanprec*ti)) then
+                  !    scandata(k,l,ti)=y(1)
 
-                      !if (debugout) write(6,*) ti,counter, tft, scandata(k,l,ti)
-                      if (ti.ne.scanl*2) then
-                          ti=ti+1
-                      endif
-                  endif
+                  !    !if (debugout) write(6,*) ti,counter, tft, scandata(k,l,ti)
+                  !    if (ti.ne.scanl*2) then
+                  !        ti=ti+1
+                  !    endif
+                  !endif
 
-                  if((tftold.le.endtime).and.(tft.gt.endtime)) then
-                      comp(k,l)=y(1)
-                      if (debugout) write(6,*) y(1)
-                  endif
+                  !if((tftold.le.endtime).and.(tft.gt.endtime)) then
+                  !    comp(k,l)=y(1)
+                  !    if (debugout) write(6,*) y(1)
+                  !endif
 
                   y1old=y(1)
                   tftold=tft
@@ -578,6 +578,7 @@
                       !if (debugout) write(6,*) m,i,time(m)
                   endif                
               enddo
+              comp(k,l)=y(1)
               if(lowstepcheck.ne.14) then
                   error=1
               endif
@@ -599,14 +600,14 @@
       write(6,'(A,E12.4)') ' dx=',maxval(comp(1:p,1:q))-minval(comp(1:p,1:q))
       if (error.eq.1) write(6,*) "Invalid Test", lowstepcheck
 
-      do test=0,scanl*2
-          scandx(test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
-          !if (debugout) write(6,*) test, scandx(test)
-          write(14,104) scandata(1:p,1:q,test)-scandata((p+1)/2,(q+1)/2,test), scandx(test)
-      enddo
-      if(minval(scandx(0:scanl*2)).eq.scandx(0).or.minval(scandx(0:scanl*2)).eq.scandx(scanl*2)) then
-          write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
-      endif
+      !do test=0,scanl*2
+      !    scandx(test)=maxval(scandata(1:p,1:q,test))-minval(scandata(1:p,1:q,test))
+      !    !if (debugout) write(6,*) test, scandx(test)
+      !    write(14,104) scandata(1:p,1:q,test)-scandata((p+1)/2,(q+1)/2,test), scandx(test)
+      !enddo
+      !if(minval(scandx(0:scanl*2)).eq.scandx(0).or.minval(scandx(0:scanl*2)).eq.scandx(scanl*2)) then
+      !    write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
+      !endif
 
 
       write(6,*) "dx is also=", minval(scandx(0:scanl*2))

@@ -17,6 +17,7 @@
       real*8 rwksp(43592)
       call iwkin(43592)
       OPEN(UNIT=11,FILE='tuning.dat',type='replace')
+      open(unit=12,file='tuning.csv',type='replace')
       OPEN(UNIT=14,FILE='width.dat',type='replace')        
 
       !write(6,*) ' stop integration at (micro s):'
@@ -32,6 +33,7 @@
       write(6,*) char(7)
 
       close(11)
+      close(12)
       close(14)
       STOP
       END
@@ -100,7 +102,7 @@
       common/time/ endoftim
       real*8 endoftim
       integer mxparm,neq,i,ido,p,q,r,s,k,l,m,n,boundarycheck
-      parameter (mxparm=120,neq=6,p=3,q=3,r=10,s=10)
+      parameter (mxparm=120,neq=6,p=3,q=3,r=3,s=40)
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta,dthetam
@@ -136,8 +138,8 @@
       do m=1,r
         do n=1,s
           !dEm=dE**(1+(m-(r+1D0)/2D0)*1D-2)
-          dthetam=dtheta*(n-1D0)*1D-2
-          dEm=dE*(m-1D0)*5D-1
+          dthetam=dtheta*(n-1D0)*1.5D0
+          dEm=dE*(m-1D0)*1D0
           E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
 
           !some distance calculations
@@ -593,15 +595,15 @@
         !write out the data
         do test=1,r
           write(11,101) outdata(1:3,test,1:s) 
-
         enddo
-      do test=0,scanl*2
-          write(14,104) scandx(1:r,test) !shows how the pulse width of each run
-      enddo                              !changed over time
+        write(12,102) 0D0,outdata(2,1,1:s)
+        do test=1,r
+            write(12,102) outdata(1,test,1),outdata(3,test,1:s)
+        enddo
 
 
-101   format(3E15.7)
-102   format(18E15.7)
+101   format(30E15.7)
+102   format(21(E15.7,','))
 103   format(7(E12.7,','))
 104   format(101E15.7)
       return
