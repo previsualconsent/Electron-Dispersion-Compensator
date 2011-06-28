@@ -103,12 +103,12 @@
       common/time/ endoftim
       real*8 divider,endoftim
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),lowstepcheck,iold
-      parameter (mxparm=120,neq=6,p=1,q=3)
-      integer r,error, ti, scanl,scanprec
+      parameter (mxparm=120,neq=6,p=3,q=3)
+      integer r,error, ti, scanl,scanprec,midk,midl
       parameter (scanl=100,scanprec=50)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw,dE,dtheta
-      parameter (B=3.1D-14,dw=.9D5,dE=2.5D-5,dtheta=4D-4)
+      parameter (B=3.1D-14,dw=.9D5,dE=2.5D-5,dtheta=5D-4)
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta
@@ -121,13 +121,14 @@
       external fcn,divprk,sset
       ! !run test electron to get information about path
       write(6,*) "Initial Electron"
+
       length=me*vini/(e*B)*4D0*pi+pend   !total length based on path
       endoftim=length/vini          !total time for travel
 
-      lowTstep=endoftim/100000      !low precision time step
+      lowTstep=endoftim/1D5      !low precision time step
       sls=lowTstep*vini             !average distance for 1 lowTstep
 
-      bTstep=lowTstep*1D1   !time step for B-fields
+      bTstep=lowTstep*.5D0   !time step for B-fields
       bls=bTstep*vini       !average distance of 1 bTstep
                                                                   
       wfTstep=lowTstep*1D2  !time step for WF
@@ -184,8 +185,8 @@
 
           call divprk(ido,neq,fcn,t,tend,tol,param,y) !call integrater
 
-60    format(x,'counter=',i1,x,'flag=',i1,x,'steps=',i10)
-61    format(x,'counter=',i1,8x,'steps=',i10)
+60    format(x,'counter=',i1,x,'flag=',i2,x,'steps=',i10,x,'Tstep=',E12.4)
+61    format(x,'counter=',i1,9x,'steps=',i10,x,'Tstep=',E12.4)
 
       select case (counter)
       case (0)
@@ -193,49 +194,49 @@
           Ey=0D0
           if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
               step=hiTstep
-              if (debugout) write(6,60) counter,0,i
+              if (debugout) write(6,60) counter,0,i,step
               lowstepcheck=lowstepcheck+1
           endif
           if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
-              if (debugout) write(6,61) counter,i
               counter=1
               step=bTstep
               time(1)=i
               Bz=-B
+              if (debugout) write(6,61) counter,i,step
           endif
       case (1)
           if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
-              if (debugout) write(6,60) counter, 1, i
-              step=lowTstep
+              step=hiTstep  !lowTstep
               lowstepcheck=lowstepcheck+1
+              if (debugout) write(6,60) counter, 11, i,step
           endif
           if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
-              if (debugout) write(6,60) counter, 1, i
-              step=hiTstep
+              !step=hiTstep !check for bTstep
               lowstepcheck=lowstepcheck+1
+              if (debugout) write(6,60) counter, 12, i,step
           endif
           if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
               counter=2
               Bz=B
               step=bTstep
-              if (debugout) write(6,61) counter,i
+              if (debugout) write(6,61) counter,i,step
           endif
       case (2)
           if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
               step=hiTstep
-              if (debugout) write(6,60) counter,2,i
+              if (debugout) write(6,60) counter,2,i,step
               lowstepcheck=lowstepcheck+1
           endif
             if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
-                step=lowTstep
-                if (debugout) write(6,60) counter,2,i
+                step=hiTstep !lowTstep
+                if (debugout) write(6,60) counter,2,i,step
                 lowstepcheck=lowstepcheck+1
             endif
             if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
                 step=lowTstep
                 counter=3
                 Bz=0D0
-                if (debugout) write(6,61) counter,i
+                if (debugout) write(6,61) counter,i,step
                 time(2)=i
             endif
 
@@ -243,7 +244,7 @@
             if ((y1old.le.dw1-sls).and.(y(1).gt.dw1-sls)) then
                 step=hiTstep
                 lowstepcheck=lowstepcheck+1
-                if (debugout) write(6,60) counter,3, i
+                if (debugout) write(6,60) counter,3, i,step
             endif
             if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
                 if (debugout) write(6,*) pend/2-dw/2,pend/2+dw/2
@@ -252,7 +253,7 @@
                 Bz=Ey/vini
                 write(6,*) Ey,Bz*y(4)
                 step=wfTstep
-                if (debugout) write(6,61) counter,i
+                if (debugout) write(6,61) counter,i,step
                 time(3)=i
                 y0=y(2)
                 write(6,*) "y0=",y0
@@ -263,19 +264,19 @@
             if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
                 step=lowTstep
                 lowstepcheck=lowstepcheck+1
-                if (debugout) write(6,60) counter,4, i
+                if (debugout) write(6,60) counter,4, i,step
             endif
             if ((y1old.le.dw2-sls).and.(y(1).gt.dw2-sls)) then
                 step=hiTstep
                 lowstepcheck=lowstepcheck+1
-                if (debugout) write(6,60) counter,4, i
+                if (debugout) write(6,60) counter,4, i,step
             endif
             if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
                 step=lowTstep
                 counter=5
                 Bz=0D0
                 Ey=0D0
-                if (debugout) write(6,61) counter,i
+                if (debugout) write(6,61) counter,i,step
                 time(4)=i
             endif
 
@@ -283,14 +284,14 @@
             if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                 step=hiTstep
                 lowstepcheck=lowstepcheck+1
-                if (debugout) write(6,60) counter, 6, i
+                if (debugout) write(6,60) counter, 6, i,step
             endif
             if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
                 step=bTstep
                 counter=6
                 Bz=B
                 Ey=0D0
-                if (debugout) write(6,61) counter,i
+                if (debugout) write(6,61) counter,i,step
                 time(5)=i
             endif
 
@@ -298,36 +299,36 @@
             if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
                 step=lowTstep
                 lowstepcheck=lowstepcheck+1
-                if (debugout) write(6,60) counter, 5, i
+                if (debugout) write(6,60) counter, 5, i,step
             endif
             if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
                 step=hiTstep
                 lowstepcheck=lowstepcheck+1
-                if (debugout) write(6,60) counter, 5, i
+                if (debugout) write(6,60) counter, 5, i,step
             endif
             if ((y1old.gt.pos2).and.(y(1).le.pos2)) then
                 step=bTstep
                 counter=7
                 Bz=-B
-                if (debugout) write(6,61) counter,i
+                if (debugout) write(6,61) counter,i,step
             endif
         case (7)
             if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
                 step=lowTstep
                 lowstepcheck=lowstepcheck+1
-                if (debugout) write(6,60) counter, 6, i
+                if (debugout) write(6,60) counter, 6, i,step
             endif
             if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                 step=hiTstep
                 lowstepcheck=lowstepcheck+1
-                if (debugout) write(6,60) counter, 6, i
+                if (debugout) write(6,60) counter, 6, i,step
             endif
             if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
                 step=lowTstep
                 counter=8
                 Bz=0D0
                 timecheck=tft
-                if (debugout) write(6,61) counter,i
+                if (debugout) write(6,61) counter,i,step
                 time(6)=i
                 x1=y(1)
             endif
@@ -336,7 +337,7 @@
         if ((tft.gt.endoftim-lowTstep).and.(tftold.le.endoftim-lowTstep)) then
             step=hiTstep
             lowstepcheck=lowstepcheck+1
-            if (debugout) write(6,60) counter, 7, i
+            if (debugout) write(6,60) counter, 7, i,step
         endif
 
         y1old=y(1)
@@ -369,9 +370,10 @@
               enddo
               
               !sets energy spread to dE and angle spread to dtheta
-              y(4)=(1.00D0+2D0**1*dE/4D0*(l-(q+1D0)/2D0))*vini*cos(dtheta/2D0*(k-(p+1D0)/2D0))
-              y(5)=(1.00D0+2D0**1*dE/4D0*(l-(q+1D0)/2D0))*vini*sin(dtheta/2D0*(k-(p+1D0)/2D0))
+              y(4)=(1.00D0+dE/4D0*(l-(q+1D0)/2D0))*vini*cos(dtheta/2D0*(k-(p+1D0)/2D0))
+              y(5)=(1.00D0+dE/4D0*(l-(q+1D0)/2D0))*vini*sin(dtheta/2D0*(k-(p+1D0)/2D0))
 
+              write(6,*) dtheta
               write(6,50) k,p,l,q
 50    format(x/,x,i1,'/',i1,x,i1,'/',i1)
               call sset(mxparm,0.0,param,1)
@@ -402,57 +404,57 @@
                       Ey=0D0
                       if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
                           step=hiTstep
-                          if (debugout) write(6,60) counter,0,i
                           lowstepcheck=lowstepcheck+1
+                          if (debugout) write(6,60) counter,0,i,step
                       endif
                       if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
-                          if (debugout) write(6,61) counter,i
                           counter=1
                           Bz=-B
                           step=bTstep
                           time(1)=i
+                          if (debugout) write(6,61) counter,i,step
                       endif
                   case (1)
                       if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
-                          if (debugout) write(6,60) counter, 1, i
-                          step=lowTstep
-                          lowstepcheck=lowstepcheck+1
-                      endif
-                      if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
-                          if (debugout) write(6,60) counter, 1, i
                           step=hiTstep
                           lowstepcheck=lowstepcheck+1
+                          if (debugout) write(6,60) counter, 11, i,step
+                      endif
+                      if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
+                          step=bTstep !hiTstep
+                          lowstepcheck=lowstepcheck+1
+                          if (debugout) write(6,60) counter, 21, i,step
                       endif
                       if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
                           counter=2
                           step=bTstep
                           Bz=B
-                          if (debugout) write(6,61) counter,i
+                          if (debugout) write(6,61) counter,i,step
                       endif
                   case (2)
                       if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
-                          step=hiTstep
-                          if (debugout) write(6,60) counter,2,i
+                          !step=hiTstep
                           lowstepcheck=lowstepcheck+1
+                          if (debugout) write(6,60) counter,2,i,step
                       endif
                       if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
-                          step=lowTstep
-                          if (debugout) write(6,60) counter,2,i
+                          step=hiTstep
                           lowstepcheck=lowstepcheck+1
+                          if (debugout) write(6,60) counter,2,i,step
                       endif
                       if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
                           step=lowTstep
                           counter=3
-                          if (debugout) write(6,61) counter,i
                           time(2)=i
                           Bz=0D0
+                          if (debugout) write(6,61) counter,i,step
                       endif
 
                   case (3)
                       if ((y1old.le.dw1-sls).and.(y(1).gt.dw1-sls)) then
                           step=hiTstep
                           lowstepcheck=lowstepcheck+1
-                          if (debugout) write(6,60) counter,3, i
+                          if (debugout) write(6,60) counter,3, i,step
                       endif
                       if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
                           !if (debugout) write(6,*) "dv=", e*B*(y(2)-y0)/(4*me)
@@ -479,12 +481,12 @@
                       if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
                           step=lowTstep
                           lowstepcheck=lowstepcheck+1
-                          if (debugout) write(6,60) counter,4, i
+                          if (debugout) write(6,60) counter,4, i,step
                       endif
                       if ((y1old.le.dw2-sls).and.(y(1).gt.dw2-sls)) then
                           step=hiTstep
                           lowstepcheck=lowstepcheck+1
-                          if (debugout) write(6,60) counter,4, i
+                          if (debugout) write(6,60) counter,4, i,step
                       endif
                       if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
                           yold=sqrt(y(4)**2+y(5)**2)
@@ -503,14 +505,14 @@
                       if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                           step=hiTstep
                           lowstepcheck=lowstepcheck+1
-                          if (debugout) write(6,60) counter, 6, i
+                          if (debugout) write(6,60) counter, 6, i,step
                       endif
                       if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
                           step=bTstep
                           counter=6
                           Bz=B
                           Ey=0D0
-                          if (debugout) write(6,61) counter,i
+                          if (debugout) write(6,61) counter,i,step
                           time(5)=i
                       endif
 
@@ -518,35 +520,35 @@
                       if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
                           step=lowTstep
                           lowstepcheck=lowstepcheck+1
-                          if (debugout) write(6,60) counter, 5, i
+                          if (debugout) write(6,60) counter, 5, i,step
                       endif
                       if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
                           step=hiTstep
                           lowstepcheck=lowstepcheck+1
-                          if (debugout) write(6,60) counter, 5, i
+                          if (debugout) write(6,60) counter, 5, i,step
                       endif
                       if ((y1old.gt.pos2).and.(y(1).le.pos2)) then
                           step=bTstep
                           counter=7
                           Bz=-B
-                          if (debugout) write(6,61) counter,i
+                          if (debugout) write(6,61) counter,i,step
                       endif
                   case (7)
                       if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
                           step=lowTstep
                           lowstepcheck=lowstepcheck+1
-                          if (debugout) write(6,60) counter, 6, i
+                          if (debugout) write(6,60) counter, 6, i,step
                       endif
                       if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                           step=hiTstep
                           lowstepcheck=lowstepcheck+1
-                          if (debugout) write(6,60) counter, 6, i
+                          if (debugout) write(6,60) counter, 6, i,step
                       endif
                       if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
                           step=lowTstep
                           counter=8
                           Bz=0D0
-                          if (debugout) write(6,61) counter,i
+                          if (debugout) write(6,61) counter,i,step
                           time(6)=i
                           x1=y(1)
                       endif
@@ -555,7 +557,7 @@
                   if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
                       step=hiTstep
                       lowstepcheck=lowstepcheck+1
-                      if (debugout) write(6,60) counter, 7, i
+                      if (debugout) write(6,60) counter, 7, i,step
                   endif
                   !if ((tft.gt.timecheck+lowTstep*scanprec*ti).and.(tftold.le.timecheck+lowTstep*scanprec*ti)) then
                   !    scandata(k,l,ti)=y(1)
@@ -598,6 +600,8 @@
           enddo
       enddo
       write(6,'(A,E12.4)') ' dx=',maxval(comp(1:p,1:q))-minval(comp(1:p,1:q))
+      write(6,*) "dE=",dE
+      write(6,*) "dtheta=",dtheta
       if (error.eq.1) write(6,*) "Invalid Test", lowstepcheck
 
       !do test=0,scanl*2
@@ -610,7 +614,7 @@
       !endif
 
 
-      write(6,*) "dx is also=", minval(scandx(0:scanl*2))
+      !write(6,*) "dx is also=", minval(scandx(0:scanl*2))
 
       do test=1,1000
           write(11,102) mem(1:2,test,1:p*q)

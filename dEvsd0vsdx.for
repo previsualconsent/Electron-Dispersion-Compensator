@@ -102,7 +102,7 @@
       common/time/ endoftim
       real*8 endoftim
       integer mxparm,neq,i,ido,p,q,r,s,k,l,m,n,boundarycheck
-      parameter (mxparm=120,neq=6,p=3,q=3,r=3,s=40)
+      parameter (mxparm=120,neq=6,p=3,q=3,r=3,s=10)
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta,dthetam
@@ -125,8 +125,7 @@
       lowTstep=endoftim/1D5      !low precision time step
       sls=lowTstep*vini             !average distance for 1 lowTstep
 
-      write(6,*) "Accuracy:",sls*scanprec
-      bTstep=lowTstep*1D1           !time step for B-fields
+      bTstep=lowTstep*5D-1           !time step for B-fields
       bls=bTstep*vini               !average distance of 1 bTstep
 
       wfTstep=lowTstep*1D2         !time step for WF
@@ -138,8 +137,8 @@
       do m=1,r
         do n=1,s
           !dEm=dE**(1+(m-(r+1D0)/2D0)*1D-2)
-          dthetam=dtheta*(n-1D0)*1.5D0
-          dEm=dE*(m-1D0)*1D0
+          dthetam=dtheta*(n-1D0)*1D2
+          dEm=dE*(m-1D0)*2D3
           E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
 
           !some distance calculations
@@ -214,12 +213,12 @@
               case (1)
                   if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
                       if (debugout) write(6,60) counter, 1, i
-                      step=lowTstep
+                      step=hiTstep
                       boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
                       if (debugout) write(6,60) counter, 1, i
-                      step=hiTstep
+                      !step=hiTstep
                       boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
@@ -230,12 +229,12 @@
                   endif
               case (2)
                   if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
-                      step=hiTstep
+                      !step=hiTstep
                       if (debugout) write(6,60) counter,2,i
                       boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
-                      step=lowTstep
+                      step=hiTstep
                       if (debugout) write(6,60) counter,2,i
                       boundarycheck=boundarycheck+1
                   endif
@@ -300,12 +299,12 @@
 
               case (6)
                   if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
-                      step=lowTstep
+                      step=hiTstep
                       boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 5, i
                   endif
                   if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
-                      step=hiTstep
+                      !step=hiTstep
                       boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 5, i
                   endif
@@ -317,12 +316,12 @@
                   endif
               case (7)
                   if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
-                      step=lowTstep
+                      step=hiTstep
                       boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 6, i
                   endif
                   if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
-                      step=hiTstep
+                      !step=hiTstep
                       boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 6, i
                   endif
@@ -372,6 +371,7 @@
                   y(4)=(1.00D0+dEm/4D0*(l-midl))*vini*cos(dthetam/2D0*(k-midk))
                   y(5)=(1.00D0+dEm/4D0*(l-midl))*vini*sin(dthetam/2D0*(k-midk))
 
+                  write(6,*) dthetam
                   write(6,50) k,p,l,q,m,r,n,s
 50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3,x,i3,'/',i3)
                   call sset(mxparm,0.0,param,1)
@@ -409,12 +409,12 @@
                       case (1)
                           if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
                               if (debugout) write(6,60) counter, 1, i
-                              step=lowTstep
+                              step=hiTstep
                               boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
                               if (debugout) write(6,60) counter, 1, i
-                              step=hiTstep
+                              !step=hiTstep
                               boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
@@ -425,12 +425,12 @@
                           endif
                       case (2)
                           if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
-                              step=hiTstep
+                              !step=hiTstep
                               if (debugout) write(6,60) counter,2,i
                               boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
-                              step=lowTstep
+                              step=hiTstep
                               if (debugout) write(6,60) counter,2,i
                               boundarycheck=boundarycheck+1
                           endif
@@ -510,12 +510,12 @@
 
                       case (6)
                           if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
-                              step=lowTstep
+                              step=hiTstep
                               boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 5, i
                           endif
                           if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
-                              step=hiTstep
+                              !step=hiTstep
                               boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 5, i
                           endif
@@ -546,7 +546,7 @@
 
                       end select
                       if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
-                          step=lowTstep
+                          step=hiTstep
                           boundarycheck=boundarycheck+1
                           if (debugout) write(6,60) counter, 7, i
                       endif
@@ -603,7 +603,7 @@
 
 
 101   format(30E15.7)
-102   format(21(E15.7,','))
+102   format(41(E15.7,','))
 103   format(7(E12.7,','))
 104   format(101E15.7)
       return
