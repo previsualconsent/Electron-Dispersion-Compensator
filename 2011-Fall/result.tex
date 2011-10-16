@@ -1,0 +1,92 @@
+\documentclass[12pt,letterpaper]{letter}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{cancel}
+\usepackage[hmargin=2cm,vmargin=2cm]{geometry}
+\usepackage{graphicx}
+\newcommand{\proofend}{\mbox{ }\hfill$\Box$\\}
+\newcommand{\pdf}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\ddf}[2]{\frac{\mathrm{d} #1}{\mathrm{d} #2}}
+\newcommand{\ee}[1]{\cdot10^{#1}}
+\newcommand{\dv}{\Delta v}
+
+\def\ans{\textbf{Answer:\\}}
+
+
+\begin{document}
+
+To determine the velocity that the electron has inside the Wien Filter I used energy conservation
+\begin{align} 
+E_i &=  E_f \\
+\frac{1}{2}m\left( v_0 +\dv\right)^2 &= - Eq\Delta y + \frac{1}{2} m\left( v_0 + \dv +\dv_{wf} \right)^2\\
+&= - \frac{4Em\dv}{B} + \frac{1}{2} m\left( v_0 + \dv +\dv_{wf} \right)^2
+\label{eq:something}
+\end{align}
+We have chosen E and B such that
+\begin{equation}
+   \label{eq:ebrel}
+   E = -\frac{d_{tot}}{d_w}\frac{Bv_0}{4}
+\end{equation}
+We combine \ref{eq:something} and \ref{eq:ebrel} to get
+\begin{align}
+   \frac{1}{2}m\left( v_0 +\dv\right)^2 &= \frac{d_{tot}}{d_w} m\dv v_0+\frac{1}{2}m(v_0+\dv + \dv_{wf})^2\\
+   \left( v_0 +\dv\right)^2 &= 2\frac{d_{tot}}{d_w} \dv v_0+(v_0+\dv + \dv_{wf})^2\\
+ - 2\frac{d_{tot}}{d_w} \dv v_0 +  \left( v_0 +\dv\right)^2 &=  (v_0+\dv + \dv_{wf})^2\\
+ \sqrt{- 2\frac{d_{tot}}{d_w} \dv v_0 +  \left( v_0 +\dv\right)^2} &=  v_0+\dv + \dv_{wf}\\
+ \sqrt{\left( v_0 +\dv\right)^2-2\frac{d_{tot}}{d_w} \dv v_0 }-v_0 -\dv&=  \dv_{wf}
+ \label{eq:bettervwf}
+\end{align}
+From Martin's analysis, the equation for $\dv_{wf}$ is
+\begin{equation}
+   \dv_{wf} = \frac{4E\dv}{B v_0}
+\end{equation}
+using \eqref{eq:ebrel} as above gives
+\begin{equation}
+   \dv_{wf} = -\frac{d_{tot}}{d_w}\dv
+   \label{eq:idealvwf}
+\end{equation}
+Both \eqref{eq:bettervwf} and \eqref{eq:idealvwf} depend on the ratio $\frac{d_{tot}}{d_w}$ and $\dv$. Since \eqref{eq:idealvwf} is the ideal case, this gives us a pulse width of $0$. By beforming a first order approximation on \eqref{eq:bettervwf} gave back equation \eqref{eq:idealvwf}. To determine the error, I will compare a second order approximation to the first order. 
+
+The second order approximation of \eqref{eq:bettervwf} is:
+\begin{align}
+   \dv_{wf} &= \sqrt{\left( v_0 +\dv\right)^2+2\frac{d_{tot}}{d_w} \dv v_0 }-v_0 -\dv \\
+   &= \left( v_0 +\dv\right)\sqrt{1+2\frac{d_{tot}}{d_w} \frac{\dv v_0}{\left( v_0 +\dv\right)^2} }-v_0 -\dv\\
+   &= \left( v_0 +\dv\right)\left[ \sqrt{1+2\frac{d_{tot}}{d_w} \frac{\dv v_0}{\left( v_0 +\dv\right)^2} }-1 \right]\\
+   &= \left( v_0 + \dv \right) \left[ 1+\frac{d_{tot}}{d_w}\frac{\dv v_0}{(v_0 +\dv)^2} -\frac{1}{2}\left( \frac{d_{tot}}{d_w}\frac{\dv v_0}{(v_0 + \dv)^2} \right)^2 -1 \right]\\
+   &= \left( v_0 + \dv \right) \left[ \frac{d_{tot}}{d_w}\frac{\dv v_0}{(v_0 +\dv)^2} -\frac{1}{2}\left( \frac{d_{tot}}{d_w}\right)^2\frac{\dv^2 v_0^2}{(v_0 + \dv)^4} \right]\\
+   &= \left[ \frac{d_{tot}}{d_w}\frac{\dv v_0\left( v_0 + \dv \right) }{(v_0 +\dv)^2} -\frac{1}{2}\left( \frac{d_{tot}}{d_w}\right)^2\frac{\dv^2 v_0^2\left( v_0 + \dv \right) }{(v_0 + \dv)^4} \right]\\
+   &= \left[ \frac{d_{tot}}{d_w}\frac{\dv v_0 }{v_0 +\dv} -\frac{1}{2}\left( \frac{d_{tot}}{d_w}\right)^2\frac{\dv^2 v_0^2\ }{(v_0 + \dv)^3} \right]
+   \label{eq:a}
+\end{align}
+We can expand $(v_0 + \dv)^3$ to:
+\begin{equation}
+   v_0^3+3v_0^2 \dv +3v_0\dv^2+\cancelto{0}{\dv^3} \approx v_0^3+3v_0^2 \dv +3v_0\dv^2
+\end{equation}
+Substituing back into \eqref{eq:a}
+\begin{align}
+   \label{eq:b}
+   \dv_{wf} &= \left[ \frac{d_{tot}}{d_w}\frac{\dv v_0 }{v_0 +\dv} -\frac{1}{2}\left( \frac{d_{tot}}{d_w}\right)^2\frac{\dv^2 v_0^2\ }{v_0^3+3v_0^2 \dv +3v_0\dv^2} \right]\\
+   &= \left[ \frac{d_{tot}}{d_w}\frac{\dv}{1+\frac{\dv}{v_0}} -\frac{1}{2}\left( \frac{d_{tot}}{d_w}\right)^2\frac{\dv^2 v_0^2\ }{v_0^3\left(1+3\frac{ \dv}{v_0} +3\frac{\dv^2}{v_0^2}\right)} \right]\\
+   &= \left[ \frac{d_{tot}}{d_w}\frac{\dv}{1+\frac{\dv}{v_0}} -\frac{1}{2}\left( \frac{d_{tot}}{d_w}\right)^2\frac{\dv \frac{\dv} {v_0}\ }{1+3\frac{ \dv}{v_0} +3\frac{\dv^2}{v_0^2}} \right]
+\end{align}
+I performed another second order approximation on this function and which resulted with
+\begin{align}
+   \dv_{wf} &= - \frac{d_{tot}}{d_w}\dv - \frac{1}{2} \frac{\dv^2}{v_0}\frac{d_{tot}}{d_w}\left( \frac{d_{tot}}{d_w}-2 \right)
+\end{align}
+The difference in the ideal velocity change and the actual is $\dv_{err}$
+\begin{equation}
+   \dv_{err} =  - \frac{1}{2} \frac{\dv^2}{v_0}\frac{d_{tot}}{d_w}\left( \frac{d_{tot}}{d_w}-2 \right)
+   \label{dverr}
+\end{equation}
+The time of flight difference is:
+\begin{align}
+   \Delta t_{err} &= d_w \frac{\dv_{err}}{v_0^2} \\
+   \Delta t_{err} &= d_w \frac{ - \frac{1}{2} \frac{\dv^2}{v_0}\frac{d_{tot}}{d_w}\left( \frac{d_{tot}}{d_w}-2 \right)}{v_0^2} \\
+   \Delta t_{err} &= \frac{1}{2} \frac{\dv^2}{v_0^3} d_{tot} \left(2 -  \frac{d_{tot}}{d_w} \right)
+\end{align}
+I've realized that $\left(2 -  \frac{d_{tot}}{d_w} \right)$ doesn't make sense so I'll go back to \eqref{eq:b}
+
+\end{document}
+
