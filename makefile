@@ -7,6 +7,10 @@ path:path.for
 	fl32 /Op /4Yb /4Yf /nologo path.for
 	path.exe
 
+path.2:path.for
+	fl32 /Op /4Yb /4Yf /nologo path.2.for
+	path.2.exe
+
 bgradient.tuning.3d:bgradient.tuning.3d.for
 	fl32 /Op /4Yb /4Yf /nologo bgradient.tuning.3d.for
 	bgradient.tuning.3d.exe

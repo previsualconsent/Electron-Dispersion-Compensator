@@ -16,15 +16,15 @@
       common/worksp/rwksp
       real*8 rwksp(43592)
       call iwkin(43592)
-      OPEN(UNIT=11,FILE='tuning.2.dat',type='replace')
+      OPEN(UNIT=11,FILE='tuning.dat',type='replace')
+      OPEN(UNIT=12,FILE='angle.dat',type='replace')
       OPEN(UNIT=14,FILE='width.2.dat',type='replace')        
 
       !write(6,*) ' stop integration at (micro s):'
       !read(*,*) endoftim
 
       !endoftim=endoftim*1.E-6 
-      tol=.0000001D0
-
+      tol=1D-7
       write(6,*) "version 1.5"
       write(6,*) char(7)
       call parameters
@@ -100,16 +100,16 @@
       common/time/ endoftim
       real*8 endoftim
       integer mxparm,neq,i,ido,p,q,r,k,l,m,boundarycheck
-      parameter (mxparm=120,neq=6,p=3,q=3,r=101)
+      parameter (mxparm=120,neq=6,p=3,q=1,r=11)
       integer error, ti, scanl,scanprec,midk,midl
       parameter (scanl=400,scanprec=15)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta,dthetam
-      parameter (B=3.1D-14,dw=.4D5,dE=2.5D-5,dtheta=2D-4)
+      parameter (B=3.1D-14,dw=.5D5,dE=1D-3,dtheta=1D-4)
       real*8 pend,pos1,pos2,endtime,step,sls
-      real*8 dw1,dw2,ddw,wfls,bls,yold,theta
-      parameter (pend=.5D5,ddw=1D-4)
+      real*8 dw1,dw2,ddw,wfls,bls,yold,theta,theta1,theta2
+      parameter (pend=1D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2),xf(p,q)
-      real*8 timecheck,percent,outdata(2,r)
+      real*8 filtertime,percent,outdata(4,r)
       logical debugout
       parameter (debugout=.false.)
       
@@ -124,29 +124,32 @@
       sls=lowTstep*vini             !average distance for 1 lowTstep
 
       write(6,*) "Accuracy:",sls*scanprec
-      bTstep=lowTstep*1D1           !time step for B-fields
+      bTstep=lowTstep*5D-1           !time step for B-fields
       bls=bTstep*vini               !average distance of 1 bTstep
 
-      wfTstep=lowTstep*1D2         !time step for WF
+      wfTstep=lowTstep*1D1         !time step for WF
       wfls=wfTstep*vini             !average distance for 1 wfTstep
 
-      hiTstep=lowTstep*1D-3          !hi-res step for approaching borders 
-      endTstep=lowTstep*1D-3    !set step size for final section
+      hiTstep=lowTstep*1D-5          !hi-res step for approaching borders 
+      endTstep=lowTstep*1D-5    !set step size for final section
 
       do m=1,r
-          dthetam=dtheta*(m-1D0)*1D-2
+          dthetam=dtheta*(m-1D0)
           E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
 
+          write(6,'(x,A,E12.4)') 'E0=',E0
           !some distance calculations
           pos1=(pend-dw)/4D0 !first B-field border
           pos2=pend-pos1     !second B-field border
-          dw1=pend/2D0-dw/2D0 !start of Wien filter
-          dw2=pend/2D0+dw/2D0 !end of Wien filter
+          dw1=(pend-dw)/2D0 !start of Wien filter
+          dw2=(pend+dw)/2D0 !end of Wien filter
 
 51    format(x,'pos1=',E12.4,x,"pos2=",E12.7)
 52    format(x,'dw1=',E12.4,x,'dw2=',E12.7)
 53    format(x,'lowTstep=',E12.4,x,'hiTstep=',E12.4)
 54    format(x,3(A,E12.4,x))
+
+          !write(12,'(E12.5,x,E12.5)') dthetam,e*E0*dw*dthetam*dw1/(me*vini**2)
           if (debugout) then
 
               write(6,51) pos1,pos2 !write info to console
@@ -182,6 +185,10 @@
               tft=tft+step      !increment the time
               tend=tft          !set new tend  
 
+              if(MOD(i,100000).eq.0) then
+66    format(i3,'%')
+                  write(6,66) int(tft/endoftim*100)
+              endif
               call divprk(ido,neq,fcn,t,tend,tol,param,y) !call integrater
 
 60    format(x,'counter=',i1,x,'flag=',i1,x,'steps=',i10)
@@ -209,7 +216,7 @@
               case (1)
                   if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
                       if (debugout) write(6,60) counter, 1, i
-                      step=lowTstep
+                      step=hiTstep
                       boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
@@ -230,7 +237,7 @@
                       boundarycheck=boundarycheck+1
                   endif
                   if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
-                      step=lowTstep
+                      step=hiTstep
                       if (debugout) write(6,60) counter,2,i
                       boundarycheck=boundarycheck+1
                   endif
@@ -295,7 +302,7 @@
 
               case (6)
                   if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
-                      step=lowTstep
+                      step=hiTstep
                       boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 5, i
                   endif
@@ -312,7 +319,7 @@
                   endif
               case (7)
                   if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
-                      step=lowTstep
+                      step=hiTstep
                       boundarycheck=boundarycheck+1
                       if (debugout) write(6,60) counter, 6, i
                   endif
@@ -383,6 +390,9 @@
                       i=i+1
                       tft=tft+step
                       tend=tft  
+                      if(MOD(i,100000).eq.0) then
+                          write(6,66) int(tft/endtime*100)
+                      endif
                       call divprk(ido,neq,fcn,t,tend,tol,param,y)
 
                       !same switch as above
@@ -404,12 +414,12 @@
                       case (1)
                           if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
                               if (debugout) write(6,60) counter, 1, i
-                              step=lowTstep
+                              step=hiTstep
                               boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
                               if (debugout) write(6,60) counter, 1, i
-                              step=hiTstep
+                              !step=hiTstep
                               boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
@@ -417,15 +427,16 @@
                               step=bTstep
                               Bz=B
                               if (debugout) write(6,61) counter,i
+                              outdata(3,m) = tft
                           endif
                       case (2)
                           if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
-                              step=hiTstep
+                              !step=hiTstep
                               if (debugout) write(6,60) counter,2,i
                               boundarycheck=boundarycheck+1
                           endif
                           if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
-                              step=lowTstep
+                              step=hiTstep
                               if (debugout) write(6,60) counter,2,i
                               boundarycheck=boundarycheck+1
                           endif
@@ -445,12 +456,12 @@
                           if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
                               !if (debugout) write(6,*) "dv=", e*B*(y(2)-y0)/(4*me)
                               !if (debugout) write(6,*) "dvg=", E0*e*(y(2)-y0)/(2*me*vini)
-
                               !ENTERING WIEN FILTER
                               !calculate old velocity and angle
                               yold=sqrt(y(4)**2+y(5)**2)
                               theta=ATAN(y(5)/y(4))
 
+                              filtertime=tft
                               !set new velocity based on calculated energy change
                               y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)*cos(theta)
                               y(5)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)*sin(theta)
@@ -458,7 +469,9 @@
                               counter=4
                               Ey=E0
                               !Matched B field. For particle traveling strait through, the field should be balanced
-                              Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
+                              !Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
+                              Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
+                              !Bz= E0/(sqrt((vini+(y(2)-y0)*e*B/(4D0*me))**2+2D0*E0*e*(y(2)-y0)/me))
                               if (debugout) write(6,62) "steps=", i
                               step=wfTstep
                               if (debugout) write(6,*) "enter field",e*E0*(y(2)-y0)/(me*vini)
@@ -476,9 +489,20 @@
                               if (debugout) write(6,60) counter,4, i
                           endif
                           if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
+                              if(k.eq.3) then
+                                  !write(12,102) dthetam/2D0*(k-midk),dE/4D0*(l-midl)*vini,dw/(tft-filtertime),dw/(tft-filtertime)-vini,4D0*me/(e*B)*(dw/(tft-filtertime)-vini)
+                                  !write(12,102) dthetam/2D0*(k-midk),4*me*vini/(e*B)*(1-cos(dthetam/2D0*(k-midk)))
+                              endif
                               !calculate velocity change for leaving WF
                               yold=sqrt(y(4)**2+y(5)**2)
                               theta=ATAN(y(5)/y(4))
+
+                              !if(k.eq.1) then
+                              !    outdata(3,m) = theta
+                              !endif
+                              !if(k.eq.3) then
+                              !    outdata(4,m) = theta
+                              !endif
                               y(4)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)*cos(theta)
                               y(5)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)*sin(theta)
                               if (debugout) write(6,*) "leave field",-e*E0*(y(2)-y0)/(me*vini)
@@ -505,12 +529,12 @@
 
                       case (6)
                           if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
-                              step=lowTstep
+                              step=hiTstep
                               boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 5, i
                           endif
                           if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
-                              step=hiTstep
+                              !step=hiTstep
                               boundarycheck=boundarycheck+1
                               if (debugout) write(6,60) counter, 5, i
                           endif
@@ -541,7 +565,7 @@
 
                       end select
                       if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
-                          step=endTstep
+                          step=hiTstep
                           boundarycheck=boundarycheck+1
                           if (debugout) write(6,60) counter, 7, i
                       endif
@@ -585,14 +609,14 @@
 
       !write out the data
       do test=1,r
-          write(11,101) outdata(1:2,test) !percent, dx, pos
+          write(11,101) outdata(1:4,test) !percent, dx, pos
       enddo
       do test=0,scanl*2
           write(14,104) scandx(1:r,test) !shows how the pulse width of each run
       enddo                              !changed over time
 
 
-101   format(3E15.7)
+101   format(4E15.7)
 102   format(18E15.7)
 103   format(7(E12.7,','))
 104   format(101E15.7)
