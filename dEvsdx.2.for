@@ -24,7 +24,7 @@
       !read(*,*) endoftim
 
       !endoftim=endoftim*1.E-6 
-      tol=9D-20
+      tol=.0000001D0
 
       write(6,*) "version 1.5"
       write(6,*) char(7)
@@ -69,6 +69,9 @@
       real*8 Bx,By,Ex,Ez
       common/trajectory/Bz,Ey
       real*8 Bz,Ey
+      real*8 B,y0
+      integer counter
+      common/func/B,y0,counter
 
 
       Ex=0D0					 
@@ -76,6 +79,17 @@
       Bx=0D0
       By=0D0
 
+      !if(counter.eq.0) then
+      !   Bz=0D0
+      !endif
+ 
+      !if(counter.eq.1) then
+      !   Bz=-B
+      !endif
+
+      if(counter.eq.4) then
+         Bz= Ey/(vini+(B/4+Ey/vini)*e*(y(2)-y0)/me)
+      endif
 
       yprime(1)=y(4)
       yprime(2)=y(5)
@@ -107,9 +121,10 @@
       parameter (scanl=400,scanprec=15)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,E0,x1,dw,dE,dEm,dtheta
 
-      parameter (B=3.1D-14,dw=.5D5,dE=3.25D-4,dtheta=2D-5)
+      parameter (dw=.5D5,dE=3.25D-4,dtheta=2D-5)
       real*8 pend,pos1,pos2,endtime,step,sls
       real*8 dw1,dw2,ddw,wfls,bls,yold,theta,theta1,theta2
+      common/func/B,y0,counter
       parameter (pend=1D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,endTstep,scandata(p,q,0:scanl*2),scandx(1:r,0:scanl*2),xf(p,q)
       real*8 timecheck,percent,outdata(2,r)
@@ -117,6 +132,9 @@
       parameter (debugout=.false.)
       
       external fcn,divprk,sset
+
+      B=1.5D-14 
+
       !initial calculations
       midk=(p+1)/2
       midl=(q+1)/2
@@ -460,12 +478,12 @@
 
                               !ENTERING WIEN FILTER
                               !calculate old velocity and angle
-                              yold=sqrt(y(4)**2+y(5)**2)
+                              yold=y(4)
                               theta=ATAN(y(5)/y(4))
 
                               !set new velocity based on calculated energy change
-                              y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)*cos(theta)
-                              y(5)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)*sin(theta)
+                              y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)
+                              write(6,*) "vx_0 in filter=", y(4)
 
                               counter=4
                               Ey=E0
@@ -484,6 +502,7 @@
                           endif
 
                       case (4)
+                         Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
                           if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
                               step=lowTstep
                               boundarycheck=boundarycheck+1
@@ -496,7 +515,7 @@
                           endif
                           if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
                               !calculate velocity change for leaving WF
-                              yold=sqrt(y(4)**2+y(5)**2)
+                              yold=y(4)
                               theta=ATAN(y(5)/y(4))
                               theta2=theta
 
@@ -505,8 +524,7 @@
 
                               endif
 
-                              y(4)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)*cos(theta)
-                              y(5)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)*sin(theta)
+                              y(4)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)
                               if (debugout) write(6,*) "leave field",-e*E0*(y(2)-y0)/(me*vini)
                               counter=5
                               Bz=0D0

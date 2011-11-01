@@ -20,6 +20,7 @@
       OPEN(UNIT=12,FILE='velocity.dat',type='replace')        
       !OPEN(UNIT=13,FILE='times.dat',type='replace')        
       OPEN(UNIT=14,FILE='width.dat',type='replace')        
+      OPEN(UNIT=15,FILE='forces.dat',type='replace')        
 
       !write(6,*) ' stop integration at (micro s):'
       !read(*,*) endoftim
@@ -70,6 +71,9 @@
       real*8 Bx,By,Ex,Ez
       common/trajectory/Bz,Ey
       real*8 Bz,Ey
+      real*8 B,y0
+      integer counter
+      common/func/B,y0,counter
 
 
       Ex=0D0					 
@@ -77,6 +81,17 @@
       Bx=0D0
       By=0D0
 
+      !if(counter.eq.0) then
+      !   Bz=0D0
+      !endif
+ 
+      !if(counter.eq.1) then
+      !   Bz=-B
+      !endif
+
+      if(counter.eq.4) then
+         Bz= Ey/(vini+(B/4+Ey/vini)*e*(y(2)-y0)/me)
+      endif
 
       yprime(1)=y(4)
       yprime(2)=y(5)
@@ -107,10 +122,12 @@
       integer r,error, ti, scanl,scanprec,midk,midl
       parameter (scanl=100,scanprec=50)
       parameter (r=5)
-      real*8 fcn,param(mxparm),t,tend,tft,y(neq),B,y0,Ed,E0,Bdw,x1,x2,dw,dE,dtheta
+      real*8 fcn,param(mxparm),t,tend,tft,y(neq),Ed,E0,Bdw,x1,x2,dw,dE,dtheta
       real*8 vout(2,1000,p*q),mem(2,1000,p*q)
+      real*8 B,y0
+      common/func/B,y0,counter
 
-      parameter (B=1.5D-14,dw=.5D5,dE=3.25D-4,dtheta=1D-3)
+      parameter (dw=.5D5,dE=3.25D-4,dtheta=1D-3)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,endTstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta,theta1,theta2
       parameter (pend=1D5,ddw=1D-4)
@@ -120,6 +137,9 @@
       parameter (debugout=.false.)
       
       external fcn,divprk,sset
+
+      B=1.5D-14 
+
       !initial calculations
       midk=(p+1)/2
       midl=(q+1)/2
@@ -140,6 +160,8 @@
       hiTstep=lowTstep*1D-5          !hi-res step for approaching borders 
       endTstep=lowTstep*1D-5    !set step size for final section
       E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
+      write(6,*) E0
+      
 
       !some distance calculations
       pos1=(pend-dw)/4D0 !first B-field border
@@ -391,7 +413,8 @@
                         mem(1,test,k+p*(l-1))=y(1)
                         mem(2,test,k+p*(l-1))=y(2)
                         vout(1,test,k+p*(l-1))=tft
-                        vout(2,test,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
+                        !vout(2,test,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
+                        vout(2,test,k+p*(l-1))=y(4)
                      endif
 
                       i=i+1
@@ -466,12 +489,12 @@
 
                               !ENTERING WIEN FILTER
                               !calculate old velocity and angle
-                              yold=sqrt(y(4)**2+y(5)**2)
+                              yold=y(4)
                               theta=ATAN(y(5)/y(4))
 
                               !set new velocity based on calculated energy change
-                              y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)*cos(theta)
-                              y(5)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)*sin(theta)
+                              y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)
+                              write(6,*) "vx_0 in filter=", y(4)
 
                               counter=4
                               Ey=E0
@@ -482,14 +505,10 @@
                               if (debugout) write(6,62) "steps=", i
                               step=wfTstep
                               if (debugout) write(6,*) "enter field",e*E0*(y(2)-y0)/(me*vini)
-                              if (l.eq.3) then 
-
-                                  write(12,102)  theta1,theta2
-                                  write(6,102) theta1,theta2
-                              endif
                           endif
 
                       case (4)
+                         Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
                           if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
                               step=lowTstep
                               boundarycheck=boundarycheck+1
@@ -502,17 +521,17 @@
                           endif
                           if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
                               !calculate velocity change for leaving WF
-                              yold=sqrt(y(4)**2+y(5)**2)
+                              yold=y(4)
                               theta=ATAN(y(5)/y(4))
                               theta2=theta
 
-                              if(l.eq.1) then
-                                  theta1=theta
+                              if (k.eq.3) then 
 
+                                  write(12,102)  theta
+                                  write(6,102) theta
                               endif
 
-                              y(4)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)*cos(theta)
-                              y(5)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)*sin(theta)
+                              y(4)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)
                               if (debugout) write(6,*) "leave field",-e*E0*(y(2)-y0)/(me*vini)
                               counter=5
                               Bz=0D0
@@ -600,7 +619,8 @@
               mem(1,1000,k+p*(l-1))=y(1)
               mem(2,1000,k+p*(l-1))=y(2)
               vout(1,1000,k+p*(l-1))=tft
-              vout(2,1000,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
+              !vout(2,1000,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
+              vout(2,1000,k+p*(l-1))=y(4)
 
                   !close out ODE workspace
                   ido=3

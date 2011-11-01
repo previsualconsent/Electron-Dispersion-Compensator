@@ -16,12 +16,39 @@
 \doublespacing
 
 \begin{document}
+
+\part*{An Electron Dispersion Compensator}
+\section*{A Dispersion Compensator for Ultrafast Electron Pulses}
+\section*{Untimed Pulse Compression For Electron Dispersion}
+\section*{Untimed Dispersion Compensation for Ultrafast Electron Pulses}
+
+\subsection*{Peter Hansen, Herman Batelaan, Martin Centurion\\University of Nebraska-Lincoln}
+
 \section{Introduction}
+\subsection{Purpose}
+\subsection{Ultrafast Electron Diffraction}
 \subsection{Idea History}
 
 To use short electron pulses that emanate from a source, the pulse has to be delivered to a target at a different location. At the source, the pulse has an energy spread. The dispersion that arises from this initial energy spread limits the resolution at the target. The basic idea of an electron dispersion compensator is to alter the electron paths to compensate for the energy differences present in the electron pulse.
 
-Like the angled gratings in an optical dispersion compensator, the electron dispersion compensator uses a pair of magnetic fields to spatially separate the particles according to their energy. A delay can be applied to electrons spatially increasing the time of flight for higher energy particles, decreasing it for lower energy particles. We do this by sending the pulse through a pair of crossed magnetic and electric fields. The electric field sets up a linear potential. Higher energy electrons pass through a higher potential and lower energy particles pass through a lower potential. With the correct delay a 
-, borrowed from the optical dispersion compensator,
+%Like the angled gratings in an optical dispersion compensator, the electron dispersion compensator uses a pair of magnetic fields to spatially separate the particles according to their energy. A delay can be applied to electrons spatially increasing the time of flight for higher energy particles, decreasing it for lower energy particles. We do this by sending the pulse through a pair of crossed magnetic and electric fields. The electric field sets up a linear potential. Higher energy electrons pass through a higher potential and lower energy particles pass through a lower potential. With the correct delay a 
+%, borrowed from the optical dispersion compensator,
+
+The electron dispersion compensator is modelled after the optical dispersion compensator.  The dispersive element is a pair of magnetic fields which disperse the electrons according to velocity, similarly to the angled gratings in an optical compensator which disperse light according to wavelength. The time spent in these magnetic fields is independent of velocity so they do not contribute any delay. The compensation $\Delta t$ in the optical compensator depends only on the path length difference $\Delta l$, so $\Delta t=\frac{\Delta l}{c}$ where $c$ is the speed of light. For electrons $\Delta t$ depends on a velocity change $\Delta v$, so $\Delta t = \frac{l}{\Delta v}$ where $l$ is the path length. We use a Wien Filter, a pair of crossed magnetic and electric fields. The electric field sets up a linear potential which slows down the higher energy electrons and speed up the lower energy electrons. 
+
+The difference between the optical dispersion in a vacuum and electron dispersion is the dispersion relationship, given by \eqref{eq:disp}. The group velocity of light in a vacuum $v_{g \gamma}$ is equal to the phase velocity $v_{p\gamma}$, but for particles, $v_{ge}=2 v_{pe}$. 
+\begin{align}
+   \label{eq:disp}
+E_\gamma=p_\gamma c &\qquad E_e=\frac{p_e^2}{2m}\\ 
+w_\gamma =k_\gamma c &\qquad  w_e =\frac{\hbar^2 k_e^2}{2m} \\
+v_{p\gamma} =c \quad v_{g\gamma}=c &\qquad  v_{pe} = \frac{\hbar^2 k_e}{2m} \quad v_{ge} = \frac{\hbar^2 k_e}{m}
+\end{align}
+
+\subsection{Theory}
+
+
+\section{Simulation}
+
+\section{Conclusion}
 \end{document}
 
