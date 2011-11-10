@@ -43,6 +43,10 @@ dEvsd0vsdx:dEvsd0vsdx.for
 	fl32 /Op /4Yb /4Yf /nologo dEvsd0vsdx.for
 	dEvsd0vsdx.exe
 
+accuracytest:accuracytest.for
+	fl32 /Op /4Yb /4Yf /nologo accuracytest.for
+	accuracytest.exe
+
 foo:foo.for
 	fl32 /Op /4Yb /4Yf /nologo foo.for
 	foo.exe

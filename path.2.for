@@ -26,7 +26,7 @@
       !read(*,*) endoftim
 
       !endoftim=endoftim*1.E-6 
-      tol=.0000001D0
+      tol=0.01D0
 
       write(6,*) "version 1.5"
       call parameters
@@ -113,7 +113,7 @@
       real*8 pi,me,e,length,vini
       common/tole/ tol
       real*8 tol
-      integer counter,test
+      integer counter,test,test1
       real*8 y1old
       common/time/ endoftim
       real*8 divider,endoftim
@@ -123,7 +123,7 @@
       parameter (scanl=100,scanprec=50)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),Ed,E0,Bdw,x1,x2,dw,dE,dtheta
-      real*8 vout(2,1000,p*q),mem(2,1000,p*q)
+      real*8 vout(2,1000,p*q),mem(2,1000,p*q),forces(8,2000)
       real*8 B,y0
       common/func/B,y0,counter
 
@@ -380,6 +380,7 @@
               do k=1,p
                   !reset variables for next run
                   test=0
+                  test1=0
                   ido=1
                   t=0D0
                   ti=0
@@ -494,7 +495,9 @@
 
                               !set new velocity based on calculated energy change
                               y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)
-                              write(6,*) "vx_0 in filter=", y(4)
+                              !write(6,*) "yold=",yold,"vx_0 in filter=", y(4)
+                              !write(6,*) "y=", y(2)-y0                  
+                              !write(6,*) "y_a=", 
 
                               counter=4
                               Ey=E0
@@ -509,16 +512,32 @@
 
                       case (4)
                          Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
-                          if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
-                              step=lowTstep
-                              boundarycheck=boundarycheck+1
-                              if (debugout) write(6,60) counter,4, i
-                          endif
-                          if ((y1old.le.dw2-sls).and.(y(1).gt.dw2-sls)) then
-                              step=hiTstep
-                              boundarycheck=boundarycheck+1
-                              if (debugout) write(6,60) counter,4, i
-                          endif
+                         if (k.eq.3.and.l.eq.3) then 
+                            if ((test1*divider).le.tft.and.test1.lt.2000) then
+                               !write(6,*) k,l,test1
+                               test1=test1+1
+                               forces(1,test1)=tft !time
+                               forces(2,test1)=y(2)-y0 !y
+                               forces(3,test1)=y(4) !vx
+                               forces(4,test1)=((-y(4)*Bz)+Ey)*e/me !sim acelleration                              
+                               forces(5,test1)=3.973838159321757D0 + 12.499032398720404D0*dCos(0.0009326417471823281D0*(tft-3155.55D0))+17.31780886211085D0*dSin(0.0009324790097936337D0*(tft-3155.55D0))
+                               !analytical trajectory (y)
+                               forces(6,test1)=-0.000025233306573176913D0+8.695171037057157D-7*(y(2)-y0)
+                               forces(7,test1)=Bz
+                               forces(8,test1)=-7.5D-15-1.5314804124482104D-19*(y(2)-y0)
+                               !analytical acelleration
+                            endif
+                         endif
+                         if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
+                            step=lowTstep
+                            boundarycheck=boundarycheck+1
+                            if (debugout) write(6,60) counter,4, i
+                         endif
+                         if ((y1old.le.dw2-sls).and.(y(1).gt.dw2-sls)) then
+                            step=hiTstep
+                            boundarycheck=boundarycheck+1
+                            if (debugout) write(6,60) counter,4, i
+                         endif
                           if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
                               !calculate velocity change for leaving WF
                               yold=y(4)
@@ -637,6 +656,7 @@
       enddo
       write(6,*) "dx=", maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
       write(6,*) "dE=",dE
+      write(6,*) "dv=", dE/4D0*vini
       write(6,*) "dtheta=",dtheta
       if (error.eq.1) write(6,*) "Invalid Test", boundarycheck
 
@@ -655,6 +675,11 @@
       do test=1,1000
           write(11,102) mem(1:2,test,1:p*q)
           write(12,102) vout(1:2,test,1:p*q)
+      enddo
+      do test=1,2000
+         if(forces(1,test).ne.0) then
+            write(15,102) forces(1:8,test)
+         endif
       enddo
 
 101   format(2E15.7)
