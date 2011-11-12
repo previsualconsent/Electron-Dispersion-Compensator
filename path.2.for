@@ -282,6 +282,7 @@
                       step=wfTstep
                       if (debugout) write(6,61) counter,i
                       y0=y(2)                   ! y0 has the center of the WF
+                      timecheck=tft
                       if (debugout) write(6,*) "y0=",y0
                   endif
 
@@ -426,6 +427,7 @@
                           write(6,66) int(tft/endtime*100)
                       endif
                       call divprk(ido,neq,fcn,t,tend,tol,param,y)
+
 
                       !same switch as above
                       select case (counter)
