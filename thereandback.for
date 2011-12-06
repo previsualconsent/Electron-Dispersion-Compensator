@@ -18,8 +18,8 @@
       call iwkin(43592)
       OPEN(UNIT=11,FILE='disp.dat',type='replace')
       OPEN(UNIT=12,FILE='velocity.dat',type='replace')        
-      !OPEN(UNIT=13,FILE='times.dat',type='replace')        
-      OPEN(UNIT=14,FILE='width.dat',type='replace')        
+      OPEN(UNIT=13,FILE='reverse.dat',type='replace')        
+      OPEN(UNIT=14,FILE='accuracy.dat',type='replace')        
       OPEN(UNIT=15,FILE='forces.dat',type='replace')        
 
       !write(6,*) ' stop integration at (micro s):'
@@ -116,16 +116,16 @@
       common/tole/ tol
       real*8 tol
       integer counter,test,test1
-      real*8 y1old
+      real*8 y1old,y2old,yolds(2,5)
       common/time/ endoftim
       real*8 divider,endoftim
-      integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),boundarycheck,iold
+      integer mxparm,neq,i,ido,p,q,k,l,ll,z,m,time(6),boundarycheck,iold
       parameter (mxparm=120,neq=6,p=3,q=3)
       integer r,error, ti, scanl,scanprec,midk,midl
       parameter (scanl=100,scanprec=50)
       parameter (r=5)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),Ed,E0,Bdw,x1,x2,dw,dE,dtheta
-      real*8 vout(2,1000,p*q),mem(2,1000,p*q),forces(8,2000)
+      real*8 vout(2,1000,p*q),mem(2,2,1000,p*q),mem2(2,1000,p*q),forces(8,2000)
       real*8 B,y0
       common/func/B,y0,counter
 
@@ -134,7 +134,7 @@
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta,theta1,theta2
       parameter (pend=1D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
-      real*8 timecheck,percent,xf(p,q),ET0,ET
+      real*8 timecheck,percent,xf(p,q),ET0,ET,poscheck(2,3)
       logical debugout
       parameter (debugout=.false.)
       
@@ -379,63 +379,64 @@
 
           divider=endtime/1000D0
           do l=1,q
-              do k=1,p
-                  !reset variables for next run
-                  test=0
-                  test1=0
-                  ido=1
-                  t=0D0
-                  ti=0
-                  Bz=0.
-                  Ey=0.
-                  counter=0
-                  boundarycheck=0
-                  do i=1,neq
-                      y(i)=0d0
-                  enddo
+             do k=1,p
+                do i=1,neq
+                   y(i)=0d0
+                enddo
+                y(4)=(1.00D0+dE/4D0*(l-midl))*vini*cos(dtheta/2D0*(k-midk))
+                y(5)=(1.00D0+dE/4D0*(l-midl))*vini*sin(dtheta/2D0*(k-midk))
+                do ll=1,2
+                   !reset variables for next run
+                   test=0
+                   test1=0
+                   ido=1
+                   t=0D0
+                   ti=0
+                   Bz=0.
+                   Ey=0.
+                   counter=0
+                   boundarycheck=0
 
-                  !sets energy spread to dE and angle spread to dtheta
-                  y(4)=(1.00D0+dE/4D0*(l-midl))*vini*cos(dtheta/2D0*(k-midk))
-                  y(5)=(1.00D0+dE/4D0*(l-midl))*vini*sin(dtheta/2D0*(k-midk))
+                   !sets energy spread to dE and angle spread to dtheta
 
-                  ET0=.5D0*me*(y(4)**2+y(5)**2)
+                   ET0=.5D0*me*(y(4)**2+y(5)**2)
 
-                  write(6,50) k,p,l,q,m,r,dE
+                   write(6,50) k,p,l,q,m,r,dE
 50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3," dEm=",E15.7)
-                  call sset(mxparm,0.0,param,1)
-                  param(4)=1000000000
-                  param(10)=1D0 
-                  tft=0D0
-                  i=0
-                  step=lowTstep
+                   call sset(mxparm,0.0,param,1)
+                   param(4)=1000000000
+                   param(10)=1D0 
+                   tft=0D0
+                   i=0
+                   step=lowTstep
 
 62    format(18x,A,i10)
 
-                  ! loop until the scan has finished
-                  do while(tft.le.endtime)
-                     if ((test*divider).le.tft.and.test.lt.999) then
-                        test=test+1
-                        mem(1,test,k+p*(l-1))=y(1)
-                        mem(2,test,k+p*(l-1))=y(2)
-                        vout(1,test,k+p*(l-1))=tft
-                        !vout(2,test,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
-                        vout(2,test,k+p*(l-1))=y(4)
-                     endif
+                   ! loop until the scan has finished
+                   do while(tft.le.endtime)
+                      if ((test*divider).le.tft.and.test.lt.999) then
+                         test=test+1
+                         mem(ll,1,test,k+p*(l-1))=y(1)
+                         mem(ll,2,test,k+p*(l-1))=y(2)
+                         vout(1,test,k+p*(l-1))=tft
+                         !vout(2,test,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
+                         vout(2,test,k+p*(l-1))=y(4)
+                      endif
 
-                     ET=.5D0*me*(y(4)**2+y(5)**2)+Ey*q*y(2)
-                     if ((ET-ET0)/ET0.gt.1D-11) then
-                        write(6,*) "SOMETHING IS WRONG! ET: ",ET," ET0: ", ET0
-                     endif
-                      if(MOD(i,10000).eq.0) then
-                        !write(6,*) "ET error: ",(ET-ET0)/ET0, " ET: ",ET," ET0: ", ET0
-
-                     endif
+                      ET=.5D0*me*(y(4)**2+y(5)**2)+Ey*q*y(2)
+                      if ((ET-ET0)/ET0.gt.1D-10) then
+                         write(6,*) "ET error: ",(ET-ET0)/ET0, " ET: ",ET," ET0: ", ET0
+                      endif
+                      !if(MOD(i,10000).eq.0) then
+                      !   write(6,*) "ET: ",ET," ET0: ", ET0
+                      !   write(6,*) "ET error: ",(ET-ET0)/ET0, " ET: ",ET," ET0: ", ET0
+                      !endif
                       i=i+1
                       tft=tft+step
                       tend=tft  
                       if(MOD(i,100000).eq.0) then
 66    format(i3,'%')
-                          write(6,66) int(tft/endtime*100)
+                         write(6,66) int(tft/endtime*100)
                       endif
                       call divprk(ido,neq,fcn,t,tend,tol,param,y)
 
@@ -443,85 +444,85 @@
                       !same switch as above
                       select case (counter)
                       case (0)
-                          Bz=0D0
-                          Ey=0D0
-                          if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
-                              step=hiTstep
-                              if (debugout) write(6,60) counter,0,i
-                              boundarycheck=boundarycheck+1
-                          endif
-                          if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
-                              if (debugout) write(6,61) counter,i
-                              counter=1
-                              Bz=-B
-                              step=bTstep
-                          endif
+                         Bz=0D0
+                         Ey=0D0
+                         if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
+                            step=hiTstep
+                            if (debugout) write(6,60) counter,0,i
+                            boundarycheck=boundarycheck+1
+                         endif
+                         if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
+                            if (debugout) write(6,61) counter,i
+                            counter=1
+                            Bz=-B
+                            step=bTstep
+                         endif
                       case (1)
-                          if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
-                              if (debugout) write(6,60) counter, 1, i
-                              step=hiTstep
-                              boundarycheck=boundarycheck+1
-                          endif
-                          if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
-                              if (debugout) write(6,60) counter, 1, i
-                              !step=hiTstep
-                              boundarycheck=boundarycheck+1
-                          endif
-                          if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
-                              counter=2
-                              step=bTstep
-                              Bz=B
-                              if (debugout) write(6,61) counter,i
-                          endif
+                         if ((y1old.ge.pos1+bls).and.(y(1).lt.pos1+bls)) then
+                            if (debugout) write(6,60) counter, 1, i
+                            step=hiTstep
+                            boundarycheck=boundarycheck+1
+                         endif
+                         if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
+                            if (debugout) write(6,60) counter, 1, i
+                            !step=hiTstep
+                            boundarycheck=boundarycheck+1
+                         endif
+                         if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
+                            counter=2
+                            step=bTstep
+                            Bz=B
+                            if (debugout) write(6,61) counter,i
+                         endif
                       case (2)
-                          if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
-                              !step=hiTstep
-                              if (debugout) write(6,60) counter,2,i
-                              boundarycheck=boundarycheck+1
-                          endif
-                          if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
-                              step=hiTstep
-                              if (debugout) write(6,60) counter,2,i
-                              boundarycheck=boundarycheck+1
-                          endif
-                          if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
-                              step=lowTstep
-                              counter=3
-                              if (debugout) write(6,61) counter,i
-                              Bz=0D0
-                          endif
+                         if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
+                            !step=hiTstep
+                            if (debugout) write(6,60) counter,2,i
+                            boundarycheck=boundarycheck+1
+                         endif
+                         if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
+                            step=hiTstep
+                            if (debugout) write(6,60) counter,2,i
+                            boundarycheck=boundarycheck+1
+                         endif
+                         if ((y1old.le.pos1).and.(y(1).gt.pos1)) then
+                            step=lowTstep
+                            counter=3
+                            if (debugout) write(6,61) counter,i
+                            Bz=0D0
+                         endif
 
                       case (3)
-                          if ((y1old.le.dw1-sls).and.(y(1).gt.dw1-sls)) then
-                              step=hiTstep
-                              boundarycheck=boundarycheck+1
-                              if (debugout) write(6,60) counter,3, i
-                          endif
-                          if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
-                              !if (debugout) write(6,*) "dv=", e*B*(y(2)-y0)/(4*me)
-                              !if (debugout) write(6,*) "dvg=", E0*e*(y(2)-y0)/(2*me*vini)
+                         if ((y1old.le.dw1-sls).and.(y(1).gt.dw1-sls)) then
+                            step=hiTstep
+                            boundarycheck=boundarycheck+1
+                            if (debugout) write(6,60) counter,3, i
+                         endif
+                         if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
+                            !if (debugout) write(6,*) "dv=", e*B*(y(2)-y0)/(4*me)
+                            !if (debugout) write(6,*) "dvg=", E0*e*(y(2)-y0)/(2*me*vini)
 
-                              !ENTERING WIEN FILTER
-                              !calculate old velocity and angle
-                              yold=y(4)
-                              theta=ATAN(y(5)/y(4))
+                            !ENTERING WIEN FILTER
+                            !calculate old velocity and angle
+                            yold=y(4)
+                            theta=ATAN(y(5)/y(4))
 
-                              !set new velocity based on calculated energy change
-                              y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)
-                              !write(6,*) "yold=",yold,"vx_0 in filter=", y(4)
-                              !write(6,*) "y=", y(2)-y0                  
-                              !write(6,*) "y_a=", 
+                            !set new velocity based on calculated energy change
+                            y(4)=sqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)
+                            !write(6,*) "yold=",yold,"vx_0 in filter=", y(4)
+                            !write(6,*) "y=", y(2)-y0                  
+                            !write(6,*) "y_a=", 
 
-                              counter=4
-                              Ey=E0
-                              !Matched B field. For particle traveling strait through, the field should be balanced
-                              !Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
-                              Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
-                              !Bz= E0/(sqrt((vini+(y(2)-y0)*e*B/(4D0*me))**2+2D0*E0*e*(y(2)-y0)/me))
-                              if (debugout) write(6,62) "steps=", i
-                              step=wfTstep
-                              if (debugout) write(6,*) "enter field",e*E0*(y(2)-y0)/(me*vini)
-                          endif
+                            counter=4
+                            Ey=E0
+                            !Matched B field. For particle traveling strait through, the field should be balanced
+                            !Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
+                            Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
+                            !Bz= E0/(sqrt((vini+(y(2)-y0)*e*B/(4D0*me))**2+2D0*E0*e*(y(2)-y0)/me))
+                            if (debugout) write(6,62) "steps=", i
+                            step=wfTstep
+                            if (debugout) write(6,*) "enter field",e*E0*(y(2)-y0)/(me*vini)
+                         endif
 
                       case (4)
                          Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
@@ -551,122 +552,163 @@
                             boundarycheck=boundarycheck+1
                             if (debugout) write(6,60) counter,4, i
                          endif
-                          if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
-                              !calculate velocity change for leaving WF
-                              yold=y(4)
-                              theta=ATAN(y(5)/y(4))
-                              theta2=theta
+                         if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
+                            !calculate velocity change for leaving WF
+                            yold=y(4)
+                            theta=ATAN(y(5)/y(4))
+                            theta2=theta
 
-                              if (k.eq.3) then 
+                            if (k.eq.3) then 
 
-                                  write(12,102)  theta
-                                  write(6,102) theta
-                              endif
+                               write(12,102)  theta
+                               write(6,102) theta
+                            endif
 
-                              y(4)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)
-                              if (debugout) write(6,*) "leave field",-e*E0*(y(2)-y0)/(me*vini)
-                              counter=5
-                              Bz=0D0
-                              Ey=0D0
-                              if (debugout) write(6,62) "steps=", i
-                              step=lowTstep
-                          endif
+                            y(4)=sqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)
+                            if (debugout) write(6,*) "leave field",-e*E0*(y(2)-y0)/(me*vini)
+                            counter=5
+                            Bz=0D0
+                            Ey=0D0
+                            if (debugout) write(6,62) "steps=", i
+                            step=lowTstep
+                         endif
 
                       case (5)
-                          if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
-                              step=hiTstep
-                              boundarycheck=boundarycheck+1
-                              if (debugout) write(6,60) counter, 6, i
-                          endif
-                          if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
-                              step=bTstep
-                              counter=6
-                              Bz=B
-                              Ey=0D0
-                              if (debugout) write(6,61) counter,i
-                          endif
+                         if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
+                            step=hiTstep
+                            boundarycheck=boundarycheck+1
+                            if (debugout) write(6,60) counter, 6, i
+                         endif
+                         if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
+                            step=bTstep
+                            counter=6
+                            Bz=B
+                            Ey=0D0
+                            if (debugout) write(6,61) counter,i
+                         endif
 
                       case (6)
-                          if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
-                              step=hiTstep
-                              boundarycheck=boundarycheck+1
-                              if (debugout) write(6,60) counter, 5, i
-                          endif
-                          if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
-                              !step=hiTstep
-                              boundarycheck=boundarycheck+1
-                              if (debugout) write(6,60) counter, 5, i
-                          endif
-                          if ((y1old.gt.pos2).and.(y(1).le.pos2)) then
-                              step=bTstep
-                              counter=7
-                              Bz=-B
-                              if (debugout) write(6,61) counter,i
-                          endif
+                         if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
+                            step=hiTstep
+                            boundarycheck=boundarycheck+1
+                            if (debugout) write(6,60) counter, 5, i
+                         endif
+                         if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
+                            !step=hiTstep
+                            boundarycheck=boundarycheck+1
+                            if (debugout) write(6,60) counter, 5, i
+                         endif
+                         if ((y1old.gt.pos2).and.(y(1).le.pos2)) then
+                            step=bTstep
+                            counter=7
+                            Bz=-B
+                            if (debugout) write(6,61) counter,i
+                         endif
                       case (7)
-                          if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
-                              step=lowTstep
-                              boundarycheck=boundarycheck+1
-                              if (debugout) write(6,60) counter, 6, i
-                          endif
-                          if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
-                              step=hiTstep
-                              boundarycheck=boundarycheck+1
-                              if (debugout) write(6,60) counter, 6, i
-                          endif
-                          if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
-                              step=lowTstep
-                              counter=8
-                              Bz=0D0
-                              if (debugout) write(6,61) counter,i
-                              x1=y(1)
-                          endif
+                         if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
+                            step=lowTstep
+                            boundarycheck=boundarycheck+1
+                            if (debugout) write(6,60) counter, 6, i
+                         endif
+                         if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
+                            step=hiTstep
+                            boundarycheck=boundarycheck+1
+                            if (debugout) write(6,60) counter, 6, i
+                         endif
+                         if ((y1old.le.pos2).and.(y(1).gt.pos2)) then
+                            step=lowTstep
+                            counter=8
+                            Bz=0D0
+                            if (debugout) write(6,61) counter,i
+                            x1=y(1)
+                         endif
 
                       end select
                       if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
-                          step=hiTstep
-                          boundarycheck=boundarycheck+1
-                          if (debugout) write(6,60) counter, 7, i
+                         step=hiTstep
+                         boundarycheck=boundarycheck+1
+                         if (debugout) write(6,60) counter, 7, i
                       endif
 
                       !write out predicted locatoin of focus
                       if((tftold.le.endtime).and.(tft.gt.endtime)) then
-                          if (debugout) write(6,*) y(1)
+                         if (debugout) write(6,*) y(1)
                       endif
 
+                     !yolds(1,5)=yolds(1,4)
+                     !yolds(1,4)=yolds(1,3)
+                     !yolds(1,3)=yolds(1,2)
+                     !yolds(1,2)=yolds(1,1)
+                     !yolds(1,1)=y(1)
+
+                     !yolds(2,5)=yolds(2,4)
+                     !yolds(2,4)=yolds(2,3)
+                     !yolds(2,3)=yolds(2,2)
+                     !yolds(2,2)=yolds(2,1)
+                     !yolds(2,1)=y(2)
+
+                     !if(i.eq.2) then
+                     !   write(6,102) yolds(1,1:5)
+                     !   write(6,102) yolds(2,1:5)
+                     !   write(6,102) y(1),y1old
+                     !   write(6,102) y(2),y2old
+                     !endif
+
                       !store info from last run
+                      if(ll.eq.1) then
+                         poscheck(1,1)=pend-y1old
+                         poscheck(1,2)=y2old
+                         poscheck(1,3)=i
+                      endif
+                      if(i.eq.1.and.ll.eq.2) then
+                         poscheck(2,1)=pend-y1old
+                         poscheck(2,2)=y2old
+                         poscheck(2,3)=i
+                         write(6,102) poscheck(1,1:2)
+                         write(6,102) poscheck(2,1:2)
+                         write(6,102) (poscheck(1,1)-poscheck(2,1)),(poscheck(1,2)-poscheck(2,2))
+                      endif
                       y1old=y(1)
+                      y2old=y(2)
                       tftold=tft
+                   enddo
 
-                  enddo
-
-                  !if not all the boundaries were hit, throw an error
-                  if(boundarycheck.ne.14) then
+                   !if not all the boundaries were hit, throw an error
+                   if(boundarycheck.ne.14) then
                       error=1
-                  endif
-                  boundarycheck=0
-                  if (debugout) write(6,*) "end step=", i
-                  xf(k,l)=y(1)
+                   endif
+                   boundarycheck=0
+                   !if (debugout) 
+                   write(6,*) "end step=", i
+                   xf(k,l)=y(1)
 
-              mem(1,1000,k+p*(l-1))=y(1)
-              mem(2,1000,k+p*(l-1))=y(2)
-              vout(1,1000,k+p*(l-1))=tft
-              !vout(2,1000,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
-              vout(2,1000,k+p*(l-1))=y(4)
+                   mem(ll,1,1000,k+p*(l-1))=y(1)
+                   mem(ll,2,1000,k+p*(l-1))=y(2)
+                   vout(1,1000,k+p*(l-1))=tft
+                   !vout(2,1000,k+p*(l-1))=sqrt(y(4)*y(4)+y(5)*y(5))
+                   vout(2,1000,k+p*(l-1))=y(4)
 
-                  !close out ODE workspace
-                  ido=3
-                  call divprk(ido,neq,fcn,t,tend,tol,param,y)
+                   !close out ODE workspace
+                   ido=3
+                   call divprk(ido,neq,fcn,t,tend,tol,param,y)
 
-                  tft=0d0
+                   tft=0d0
 
+
+                   !calculate minimum width
+
+
+                   if (error.eq.1) write(6,*) "Invalid Test"
+
+
+                   y(1)=pend-y(1)
+                   y(5)=-y(5)
+                enddo
+                write(6,*) "bLASH", y(1),y(2)
+                write(14,102) dE/4D0*(l-midl)*vini,dtheta/2D0*(k-midk),y(1),y(2)
+             enddo
           enddo
 
-          !calculate minimum width
-
-
-          if (error.eq.1) write(6,*) "Invalid Test"
-      enddo
       write(6,*) "dx=", maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
       write(6,*) "dE=",dE
       write(6,*) "dv=", dE/4D0*vini
@@ -686,8 +728,17 @@
       !write(6,*) "dx is also=", minval(scandx(0:scanl*2))
 
       do test=1,1000
-          write(11,102) mem(1:2,test,1:p*q)
           write(12,102) vout(1:2,test,1:p*q)
+         write(11,102) mem(1,1:2,test,1:p*q)
+          do l=1,q
+             do k=1,p
+                mem2(1,test,k+p*(l-1))=pend-mem(2,1,1001-test,k+p*(l-1))
+                mem2(2,test,k+p*(l-1))=mem(2,2,1001-test,k+p*(l-1))
+             enddo
+          enddo
+      enddo
+      do test=1,1000
+         write(13,102) mem2(1:2,test,1:p*q)
       enddo
       do test=1,2000
          if(forces(1,test).ne.0) then

@@ -47,6 +47,14 @@ accuracytest:accuracytest.for
 	fl32 /Op /4Yb /4Yf /nologo accuracytest.for
 	accuracytest.exe
 
+endtime:endtime.for
+	fl32 /Op /4Yb /4Yf /nologo endtime.for
+	endtime.exe
+
+thereandback:thereandback.for
+	fl32 /Op /4Yb /4Yf /nologo thereandback.for
+	thereandback.exe
+
 foo:foo.for
 	fl32 /Op /4Yb /4Yf /nologo foo.for
 	foo.exe

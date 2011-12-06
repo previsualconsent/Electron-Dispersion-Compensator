@@ -28,12 +28,10 @@
       !endoftim=endoftim*1.E-6 
       tol=0.01D0
 
-      write(6,*) char(7)
       write(6,*) "version 1.5"
       call parameters
       call result
 
-      write(6,*) char(7)
       close(11)
       close(12)
       close(13)
@@ -93,8 +91,9 @@
 
       if(counter.eq.4) then
          Bz= Ey/(vini+(B/4+Ey/vini)*e*(y(2)-y0)/me)
+         Bz=Ey*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*Ey))/(4D0*me*vini**3))*1D0)
       endif
-
+               !+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6)
       yprime(1)=y(4)
       yprime(2)=y(5)
       yprime(3)=y(6)
@@ -134,13 +133,14 @@
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta,theta1,theta2
       parameter (pend=1D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
-      real*8 timecheck,percent,xf(p,q),ET0,ET
-      logical debugout
+      real*8 timecheck,percent,xf(p,q)
+      logical debugout,timetogo
       parameter (debugout=.false.)
       
       external fcn,divprk,sset
 
       B=1.5D-14 
+      timetogo=.false.
 
       !initial calculations
       midk=(p+1)/2
@@ -151,6 +151,7 @@
       lowTstep=endoftim/1D5      !low precision time step
       sls=lowTstep*vini             !average distance for 1 lowTstep
 
+      write(6,*) "Accuracy:",sls*scanprec
 
       bTstep=lowTstep*5D-1           !time step for B-fields
       bls=bTstep*vini               !average distance of 1 bTstep
@@ -179,7 +180,7 @@
          write(6,51) pos1,pos2 !write info to console
          write(6,52) dw1,dw2
          write(6,53) lowTstep,hiTstep
-         write(6,54) 'sls=',sls,'lowDstep=',lowTstep*vini,'hiDstep=',hiTstep*vini
+         write(6,54) 'sls=',sls,'lowTstep=',lowTstep,'hiTstep=',hiTstep
          write(6,'(x,A,F12.4,x,A,E12.4)') 'length=',length,'end time=',endoftim
 
       endif   
@@ -398,8 +399,6 @@
                   y(4)=(1.00D0+dE/4D0*(l-midl))*vini*cos(dtheta/2D0*(k-midk))
                   y(5)=(1.00D0+dE/4D0*(l-midl))*vini*sin(dtheta/2D0*(k-midk))
 
-                  ET0=.5D0*me*(y(4)**2+y(5)**2)
-
                   write(6,50) k,p,l,q,m,r,dE
 50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3," dEm=",E15.7)
                   call sset(mxparm,0.0,param,1)
@@ -422,14 +421,6 @@
                         vout(2,test,k+p*(l-1))=y(4)
                      endif
 
-                     ET=.5D0*me*(y(4)**2+y(5)**2)+Ey*q*y(2)
-                     if ((ET-ET0)/ET0.gt.1D-11) then
-                        write(6,*) "SOMETHING IS WRONG! ET: ",ET," ET0: ", ET0
-                     endif
-                      if(MOD(i,10000).eq.0) then
-                        !write(6,*) "ET error: ",(ET-ET0)/ET0, " ET: ",ET," ET0: ", ET0
-
-                     endif
                       i=i+1
                       tft=tft+step
                       tend=tft  
@@ -438,6 +429,11 @@
                           write(6,66) int(tft/endtime*100)
                       endif
                       call divprk(ido,neq,fcn,t,tend,tol,param,y)
+                      if(timetogo) then
+                         write(6,*) "y at the right time: ", y(1)-dw-dw1
+                         timetogo=.false.
+                      endif
+
 
 
                       !same switch as above
@@ -515,16 +511,26 @@
                               counter=4
                               Ey=E0
                               !Matched B field. For particle traveling strait through, the field should be balanced
-                              !Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
-                              Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
+                              Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
+                              !Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
                               !Bz= E0/(sqrt((vini+(y(2)-y0)*e*B/(4D0*me))**2+2D0*E0*e*(y(2)-y0)/me))
                               if (debugout) write(6,62) "steps=", i
                               step=wfTstep
                               if (debugout) write(6,*) "enter field",e*E0*(y(2)-y0)/(me*vini)
+                              write(6,*) "yini: ",y(2)-y0
+                              write(6,*) "vyini: ",y(5)
+                              !y(2)=y0+16.47287055804216D0
+                              !y(1)=dw1
+                              !y(4)=32.28089248707926D0
+                              !y(5)=0.016151311514528668D0
+                              step=dw/vini
+                              timetogo=.true.
+
                           endif
 
                       case (4)
-                         Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
+                         !Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
+                              Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
                          if (k.eq.3.and.l.eq.3) then 
                             if ((test1*divider).le.tft.and.test1.lt.2000) then
                                !write(6,*) k,l,test1
