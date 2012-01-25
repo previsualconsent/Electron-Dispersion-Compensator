@@ -18,7 +18,7 @@
       call iwkin(43592)
       OPEN(UNIT=11,FILE='disp.dat',type='replace')
       OPEN(UNIT=12,FILE='velocity.dat',type='replace')        
-      !OPEN(UNIT=13,FILE='times.dat',type='replace')        
+      OPEN(UNIT=13,FILE='endpoint.dat',type='replace')        
       OPEN(UNIT=14,FILE='width.dat',type='replace')        
       OPEN(UNIT=15,FILE='forces.dat',type='replace')        
 
@@ -120,7 +120,7 @@
       common/time/ endoftim
       real*8 divider,endoftim
       integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),boundarycheck,iold
-      parameter (mxparm=120,neq=6,p=3,q=3)
+      parameter (mxparm=120,neq=6,p=31,q=31)
       integer r,error, ti, scanl,scanprec,midk,midl
       parameter (scanl=100,scanprec=50)
       parameter (r=5)
@@ -134,13 +134,13 @@
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta,theta1,theta2
       parameter (pend=1D5,ddw=1D-4)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl*2),scandx(0:scanl*2)
-      real*8 timecheck,percent,xf(p,q),ET0,ET
+      real*8 timecheck,percent,xf(p,q),yf(p,q),ET0,ET
       logical debugout
       parameter (debugout=.false.)
       
       external fcn,divprk,sset
 
-      B=1.5D-14 
+      B=3.1D-15 
 
       !initial calculations
       midk=(p+1)/2
@@ -161,7 +161,7 @@
       hiTstep=lowTstep*1D-5          !hi-res step for approaching borders 
       endTstep=lowTstep*1D-5    !set step size for final section
       E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
-      write(6,*) E0
+      write(6,*) me*vini/(e*B)
       
 
       !some distance calculations
@@ -395,13 +395,13 @@
                   enddo
 
                   !sets energy spread to dE and angle spread to dtheta
-                  y(4)=(1.00D0+dE/4D0*(l-midl))*vini*cos(dtheta/2D0*(k-midk))
-                  y(5)=(1.00D0+dE/4D0*(l-midl))*vini*sin(dtheta/2D0*(k-midk))
+                  y(4)=(1.00D0+dE/(4D0*15D0)*(l-midl))*vini*cos(dtheta/2D0*(k-midk)/15D0)
+                  y(5)=(1.00D0+dE/(4D0*15D0)*(l-midl))*vini*sin(dtheta/2D0*(k-midk)/15D0)
 
                   ET0=.5D0*me*(y(4)**2+y(5)**2)
 
                   write(6,50) k,p,l,q,m,r,dE
-50    format(x/,x,i1,'/',i1,x,i1,'/',i1,x,i3,'/',i3," dEm=",E15.7)
+50    format(x/,x,i2,'/',i2,x,i2,'/',i2,x,i3,'/',i3," dEm=",E15.7)
                   call sset(mxparm,0.0,param,1)
                   param(4)=1000000000
                   param(10)=1D0 
@@ -423,7 +423,7 @@
                      endif
 
                      ET=.5D0*me*(y(4)**2+y(5)**2)+Ey*q*y(2)
-                     if ((ET-ET0)/ET0.gt.1D-11) then
+                     if ((ET-ET0)/ET0.gt.1D-10) then
                         write(6,*) "SOMETHING IS WRONG! ET: ",ET," ET0: ", ET0
                      endif
                       if(MOD(i,10000).eq.0) then
@@ -647,6 +647,7 @@
                   boundarycheck=0
                   if (debugout) write(6,*) "end step=", i
                   xf(k,l)=y(1)
+                  yf(k,l)=y(2)
 
               mem(1,1000,k+p*(l-1))=y(1)
               mem(2,1000,k+p*(l-1))=y(2)
@@ -689,14 +690,19 @@
           write(11,102) mem(1:2,test,1:p*q)
           write(12,102) vout(1:2,test,1:p*q)
       enddo
+      do l=1,q
+         do k=1,p
+            write(13,101) pend-xf(k,l),yf(k,l)
+         enddo
+      enddo
       do test=1,2000
          if(forces(1,test).ne.0) then
             write(15,102) forces(1:8,test)
          endif
       enddo
 
-101   format(2E15.7)
-102   format(18E15.7)
+101   format(2E20.12)
+102   format(18E20.12)
 103   format(7(E12.7,','))
 104   format(10E15.7)
       return

@@ -1,0 +1,5 @@
+Figures for tests
+   higher step size->same reslt
+   there and back
+   simulation vs analytical
+
