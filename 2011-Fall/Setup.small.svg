@@ -96,17 +96,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.6228571"
-     inkscape:cx="175"
-     inkscape:cy="100"
+     inkscape:zoom="3.2457142"
+     inkscape:cx="178.95472"
+     inkscape:cy="138.34259"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="1440"
-     inkscape:window-height="853"
-     inkscape:window-x="-4"
-     inkscape:window-y="24"
-     inkscape:window-maximized="1"
+     inkscape:window-width="712"
+     inkscape:window-height="845"
+     inkscape:window-x="720"
+     inkscape:window-y="28"
+     inkscape:window-maximized="0"
      fit-margin-top="10"
      fit-margin-left="10"
      fit-margin-right="10"
@@ -130,7 +130,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -197,7 +197,7 @@
        sodipodi:cy="355"
        sodipodi:rx="90"
        sodipodi:ry="95"
-       d="M 250,355 A 90,95 0 1 1 70,355"
+       d="m 250,355 c 0,52.46705 -40.29437,95 -90,95 -49.70563,0 -90,-42.53295 -90,-95 0,0 0,0 0,0"
        transform="matrix(0,-0.40649211,0.40649211,0,-53.006276,881.03243)"
        sodipodi:start="0"
        sodipodi:end="3.1415927"
@@ -206,7 +206,7 @@
        sodipodi:end="3.1415927"
        sodipodi:start="0"
        transform="matrix(0,-0.36132645,0.36132645,0,-36.972471,877.87088)"
-       d="M 250,355 A 90,95 0 1 1 70,355"
+       d="m 250,355 c 0,52.46705 -40.29437,95 -90,95 -49.70563,0 -90,-42.53295 -90,-95 0,0 0,0 0,0"
        sodipodi:ry="95"
        sodipodi:rx="90"
        sodipodi:cy="355"
@@ -223,7 +223,7 @@
        sodipodi:cy="355"
        sodipodi:rx="90"
        sodipodi:ry="95"
-       d="M 250,355 A 90,95 0 1 1 70,355"
+       d="m 250,355 c 0,52.46705 -40.29437,95 -90,95 -49.70563,0 -90,-42.53295 -90,-95 0,0 0,0 0,0"
        transform="matrix(0,-0.31616107,0.31616107,0,-20.938757,874.70932)"
        sodipodi:start="0"
        sodipodi:end="3.1415927"
@@ -390,7 +390,7 @@
          id="tspan4671"
          x="183.82755"
          y="678.22528"
-         style="font-size:13px">+V<tspan
+         style="font-size:13px">-V<tspan
    style="font-size:13px;baseline-shift:sub"
    id="tspan4675">0</tspan></tspan></text>
     <g
@@ -468,7 +468,7 @@
          y="765.99371"
          x="183.82755"
          id="tspan3081"
-         sodipodi:role="line">-V<tspan
+         sodipodi:role="line">+V<tspan
    id="tspan3083"
    style="font-size:13px;baseline-shift:sub">0</tspan></tspan></text>
     <text

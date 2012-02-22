@@ -55,6 +55,18 @@ thereandback:thereandback.for
 	fl32 /Op /4Yb /4Yf /nologo thereandback.for
 	thereandback.exe
 
+focus:focus.for
+	fl32 /Op /4Yb /4Yf /nologo focus.for
+	focus.exe
+
+dtvsd0:dtvsd0.for
+	fl32 /Op /4Yb /4Yf /nologo dtvsd0.for
+	dtvsd0.exe
+
+stddev:stddev.for
+	fl32 /Op /4Yb /4Yf /nologo stddev.for
+	stddev.exe
+
 foo:foo.for
 	fl32 /Op /4Yb /4Yf /nologo foo.for
 	foo.exe
