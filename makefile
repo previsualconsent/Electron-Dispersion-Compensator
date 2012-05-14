@@ -67,6 +67,14 @@ stddev:stddev.for
 	fl32 /Op /4Yb /4Yf /nologo stddev.for
 	stddev.exe
 
+dt:dt.for
+	fl32 /Op /4Yb /4Yf /nologo dt.for
+	dt.exe
+
+dt2:dt2.for
+	fl32 /Op /4Yb /4Yf /nologo dt2.for
+	dt2.exe
+
 foo:foo.for
 	fl32 /Op /4Yb /4Yf /nologo foo.for
 	foo.exe

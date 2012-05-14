@@ -16,7 +16,10 @@
       common/worksp/rwksp
       real*8 rwksp(43592)
       call iwkin(43592)
+111   format(3A20)
       OPEN(UNIT=11,FILE='dt.dat',type='replace')
+      write(11,111) "dE/E", "theta", "width"
+      close(11)
 
       !write(6,*) ' stop integration at (micro s):'
       !read(*,*) endoftim
@@ -30,7 +33,6 @@
       call result
 
       write(6,*) char(7)
-      close(11)
       STOP
       END
 
@@ -111,25 +113,25 @@
       real*8 y1old
       common/time/ endoftim
       real*8 divider,endoftim
-      integer mxparm,neq,i,ido,p,q,k,l,z,m,time(6),boundarycheck,iold,scani
-      parameter (mxparm=120,neq=6,p=3,q=31)
-      integer r,error, ti, scanl,midk,midl,n_bins
+      integer mxparm,neq,i,ido,p,q,k,l,z,m,n,time(6),boundarycheck,iold,scani
+      parameter (mxparm=120,neq=6,p=31,q=31)
+      integer r,s,error, ti, scanl,midk,midl,n_bins
       parameter (scanl=20,n_bins=40)
-      parameter (r=5)
+      parameter (r=10,s=5)
       integer hist(2,0:scanl,1:n_bins)
       real*8 fcn,param(mxparm),t,tend,tft,y(neq),Ed,E0,Bdw,x1,x2,dw,dE,dtheta
       real*8 vout(2,1000,p*q),mem(2,1000,p*q),forces(8,2000)
-      real*8 B,y0,bin_size,minimum,maximum,sums,sumsq,pulsecenter
+      real*8 B,y0,dthetan,dEm
       common/func/B,y0,counter
 
-      parameter (dw=.5D5,dE=1D-3,dtheta=0D0)
+      parameter (dw=.5D5,dE=1D-3,dtheta=1D-3)
       real*8 pend,pos1,pos2,endtime,step,histep,lowstep,endTstep,sls,comp(p,q)
       real*8 dw1,dw2,dummy,ddw,wfls,bls,disp(1:p*q),debug(10),yold,theta,theta1,theta2,scanprec
       parameter (pend=1D5,ddw=1D-4,scanprec=5D-1)
       real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,Vg(p*q),scandata(p,q,0:scanl),scandx(0:scanl*2)
       real*8 timecheck,percent,xf(p,q),yf(p,q),ET0,ET,sd
       logical debugout,scanning
-      parameter (debugout=.false.)
+      parameter (debugout=.true.)
       
       external fcn,divprk,sset
 
@@ -155,7 +157,6 @@
       hiTstep=lowTstep*1D-5          !hi-res step for approaching borders 
       endTstep=lowTstep*1D-5    !set step size for final section
       E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
-      write(6,*) me*vini/(e*B)
       
 
       !some distance calculations
@@ -168,7 +169,7 @@
 52    format(x,'dw1=',E12.4,x,'dw2=',E12.7)
 53    format(x,'lowTstep=',E12.4,x,'hiTstep=',E12.4)
 54    format(x,3(A,E12.4,x))
-      if (debugout) then
+      !if (debugout) then
 
          write(6,51) pos1,pos2 !write info to console
          write(6,52) dw1,dw2
@@ -176,7 +177,7 @@
          write(6,54) 'sls=',sls,'lowDstep=',lowTstep*vini,'hiDstep=',hiTstep*vini
          write(6,'(x,A,F12.4,x,A,E12.4)') 'length=',length,'end time=',endoftim
 
-      endif   
+      !endif   
 
       ido=1   !set initial conditions.
 
@@ -375,6 +376,9 @@
 
           divider=endtime/1000D0
           do m=1,r
+             do n=1,s
+          dEm = dE*5D-1+(m-1)*dE
+          dthetan = dtheta*5D-1+(n-1)*dtheta
           do l=1,q
               do k=1,p
                   !reset variables for next run
@@ -394,13 +398,13 @@
                   enddo
 
                   !sets energy spread to dE and angle spread to dtheta
-                  y(4)=(1.00D0+dE/(4D0*(q-1)/2D0)*(l-midl))*vini*cos(dtheta/2D0*(k-midk)/((p-1)/2D0))
-                  y(5)=(1.00D0+dE/(4D0*(q-1)/2D0)*(l-midl))*vini*sin(dtheta/2D0*(k-midk)/((p-1)/2D0))
+                  y(4)=(1.00D0+dEm/(4D0*(q-1)/2D0)*(l-midl))*vini*cos(dthetan/2D0*(k-midk)/((p-1)/2D0))
+                  y(5)=(1.00D0+dEm/(4D0*(q-1)/2D0)*(l-midl))*vini*sin(dthetan/2D0*(k-midk)/((p-1)/2D0))
 
                   ET0=.5D0*me*(y(4)**2+y(5)**2)
 
-                  write(6,50) k,p,l,q,m,r,dE
-50    format(x/,x,i2,'/',i2,x,i2,'/',i2,x,i3,'/',i3," dEm=",E15.7)
+                  write(6,50) k,p,l,q,m,r,n,s,dEm
+50    format(x/,x,i2,'/',i2,x,i2,'/',i2,x,i3,'/',i3,x,i3,'/',i3," dEm=",E15.7)
                   call sset(mxparm,0.0,param,1)
                   param(4)=1000000000
                   param(10)=1D0 
@@ -411,7 +415,7 @@
 62    format(18x,A,i10)
 
                   ! loop until the scan has finished
-                  do while(scani.le.scanl)
+                  do while(tft.le.endtime)
                      if ((test*divider).le.tft.and.test.lt.999) then
                         test=test+1
                         mem(1,test,k+p*(l-1))=y(1)
@@ -616,7 +620,7 @@
                               x1=y(1)
                           endif
                       end select
-                      if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
+                      if ((tft.gt.endtime-lowTstep*2D0).and.(tftold.le.endtime-lowTstep*2D0)) then
                           step=hiTstep
                           boundarycheck=boundarycheck+1
                           if (debugout) write(6,60) counter, 7, i
@@ -625,8 +629,6 @@
                       !write out predicted locatoin of focus
                       if((tftold.lt.endtime).and.(tft.gt.endtime)) then
                           if (debugout) write(6,*) y(1)
-                          xf(k,l)=y(1)
-                          yf(k,l)=y(2)
                       endif
 
                       !store info from last run
@@ -634,6 +636,8 @@
                       tftold=tft
 
                   enddo
+                  xf(k,l)=y(1)
+                  yf(k,l)=y(2)
 
                   !if not all the boundaries were hit, throw an error
                   if(boundarycheck.ne.14) then
@@ -664,13 +668,17 @@
       write(6,*) "dx=", sd
       write(6,*) "dE=",dEm
       write(6,*) "dv=", dEm/4D0*vini
-      write(6,*) "dtheta=",dthetam
+      write(6,*) "dtheta=",dthetan
       if (error.eq.1) write(6,*) "Invalid Test", boundarycheck
-      write(11,101) dEm,dthetam,sd
+
+      OPEN(UNIT=11,FILE='dt.dat',status='old',action='WRITE',access='append')
+      write(11,101) dEm,dthetan,sd/vini
+      close(11)
 
       enddo
+      enddo
 
-101   format(2E20.12)
+101   format(3E20.12)
 
       return
       end

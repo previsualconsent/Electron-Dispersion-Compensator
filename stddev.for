@@ -8,8 +8,19 @@
          x(i)=sin(i/2D0)
       enddo
 
+      OPEN(UNIT=11,FILE='dt.dat',status='replace',action='WRITE',access='append')
       call stddev(x,npts,sd)
       write(*,*) sd
+      write(11,*) sd
+      CLOSE(11)
+
+      do i = 1,5
+         OPEN(UNIT=11,FILE='dt.dat',status='old',action='WRITE',access='append')
+         write(11,*) sd/i
+         CLOSE(11)
+      enddo
+         
+
       end
 
       subroutine stddev(x,npts,sd)
@@ -25,5 +36,6 @@
       enddo
       sd =  sqrt(sumsq/npts)
       end
+
 
 

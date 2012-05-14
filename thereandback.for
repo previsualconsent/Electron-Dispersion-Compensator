@@ -621,6 +621,7 @@
                             Bz=0D0
                             if (debugout) write(6,61) counter,i
                             x1=y(1)
+                           write(6,*) "count me"
                          endif
 
                       end select
