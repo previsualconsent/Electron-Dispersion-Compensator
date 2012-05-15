@@ -1,0 +1,42 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{cancel}
+\usepackage[hmargin=2cm,vmargin=2cm]{geometry}
+\usepackage{graphicx}
+\newcommand{\proofend}{\mbox{ }\hfill$\Box$\\}
+\newcommand{\pdf}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\ddf}[2]{\frac{\mathrm{d} #1}{\mathrm{d} #2}}
+\newcommand{\ee}[1]{\cdot10^{#1}}
+\newcommand{\dd}[1]{\mathrm{d} #1}
+
+\def\ans{\textbf{Answer:\\}}
+
+
+\begin{document}
+\begin{eqnarray*}
+   m\dot{v}_x &=& e[v_y B_z(y)] \\
+   m\dot{v}_y &=& e[- v_x B_z(y)+E] \\ \\
+   B_z(y)&=& B_0+\beta y \\ 
+   \dot{v}_x &=& 0 \\ \\
+   \dot{v}_y &=& \frac{e}{m}[-v_x (B_0+\beta y)+E] \\ \\
+   v_x &=& \sqrt{(v+\dd{v})^2\cos\left(\frac{\dd{\theta}}{2}\right)^2-\frac{eBvd_\text{tot}d_\text{w1}\sin\left(\frac{\dd{\theta}}{2}\right)}{2md_\text{w}}} \\
+   & \approx & v+\dd{v}-\frac{e}{m}\frac{B}{8}\frac{d_\text{tot} d_\text{w1} }{ d_\text{w}} \dd{\theta}\\
+   \alpha &=& \frac{e}{m}\frac{B}{8}\frac{d_\text{tot} d_\text{w1} }{ d_\text{w}} \\ 
+   v_x&=& v+\dd{v}-\alpha \dd{\theta}\\
+   \dot{v}_y &=& \frac{e}{m}[-(v+(\dd{v}-\alpha \dd{\theta})) (B_0+\beta y)+E] \\
+   \dot{v}_y &=& \frac{e}{m}[-(\cancel{vB_0}+(\dd{v}-\alpha \dd{\theta})B_0+v\beta y+\cancel{(\dd{v}-\alpha \dd{\theta})\beta y})+\cancel{E}] \\
+   \dot{v}_y &=& - \frac{e}{m}[(\dd{v}-\alpha \dd{\theta})B_0+v\beta y]
+\end{eqnarray*}
+\begin{eqnarray*}
+   y\text{''}[t]&=& -\frac{e}{m}\left(v\beta y[t]+(\mathrm{d}v-\alpha \mathrm{d}\theta)B\right)\\ 
+   y'[0]&=& (v+\dd{v}) \sin{\frac{\dd{\theta}}{2}} \\
+   y[0] &=& d_\text{w1} \sin{\frac{\dd{\theta}}{2}}+\frac{m \dd{v}}{e B} \\
+   x\text{''}[t]&=& 0\\
+   x[0]&=& 0 \\
+   x'[0]&=&  v_\text{xwf} 
+\end{eqnarray*}
+\end{document}
+
