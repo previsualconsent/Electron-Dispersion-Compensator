@@ -7,26 +7,34 @@
 
 
       IMPLICIT NONE
-      common/par/ pi,me,e,length,vini
-      real*8 pi,me,e,length,vini
-      common/tole/ tol
-      real*8 tol
-      common/time/ endoftim
-      real*8 endoftim 
       common/worksp/rwksp
       real*8 rwksp(43592)
       call iwkin(43592)
+      !file for full path of all electrons. Format:
+      ! X1  Y1  X2  Y2  X3  Y3 ...  (in micrometers)
       OPEN(UNIT=11,FILE='disp.dat',type='replace')
+
+      !file for standard deviation pulse width at different locations
+      !near the focal point. Format:
+      ! X-Position (micrometers)  Pulse Duration (picoseconds)
       OPEN(UNIT=12,FILE='width.dat',type='replace')        
+
+      !electron positions at the final time. Format:
+      ! X   Y  (in micrometers)
       OPEN(UNIT=13,FILE='endpoint.dat',type='replace')        
+
+      !difference between each electron and center of pulse around focal
+      !point. The std dev of each row gives information for "width.dat"
+      !Format:
+      ! X-Position (micrometers)  T1  T2  T3  T4 ... (picoseconds)
       OPEN(UNIT=15,FILE='scan.dat',type='replace')        
+
+      !histogram output of "scan.dat" Format:
+      !pos1  pos2  pos3  pos4 ...
+      !rows represent Bins
+      !each column is the histogram at a specific position in the scan
       OPEN(UNIT=16,FILE='histogram.dat',type='replace')        
 
-      !write(6,*) ' stop integration at (micro s):'
-      !read(*,*) endoftim
-
-      !endoftim=endoftim*1.E-6 
-      tol=1D-15
 
       write(6,*) char(7)
       write(6,*) "version 1.5"
@@ -46,18 +54,34 @@
 
       subroutine parameters
       implicit none
-      common/par/ pi,me,e,length,vini
-      real*8 pi,me,e,length,vini
-      common/time/ endoftim
-      real*8 endoftim 
+      common/par/ pi,me,e,vini,B,pend,dw
+      real*8 pi,me,e,vini,B,pend,dw
+      common/pulse/ dE,dtheta
+      real*8 dE,dtheta
+      common/tole/ tol
+      real*8 tol
 
+      tol=1D-15
       PI=dACOS(-1d0)
       me=9.10938188D-31
       e=1.60217646D-19
-      length=.32815D0
-      !length=2D0
+
+      !initial velocity 3.23e7 m/s in micrometers/picoseconds
       vini=3.23D1
-      endoftim=length/vini
+
+      !B-Field value for turning fields in 10^(12) Tesla
+      B=3.1D-15 
+
+      !target distance in micrometers
+      pend = 1D5
+
+      !length of Wien filter
+      dw = pend/2
+      
+      !initial pulse energy spread dE/E
+      dE=1D-3
+      !initial pulse half angle spread
+      dtheta=1D-3
 
       return
       end
@@ -68,14 +92,14 @@
       implicit none
       integer neq
       real*8 t,y(neq),yprime(neq)
-      common/par/ pi,me,e,length,vini
-      real*8 pi,me,e,length,vini
+      common/par/ pi,me,e,vini,B,pend,dw
+      real*8 pi,me,e,vini,pend,dw
       real*8 Bx,By,Ex,Ez
       common/trajectory/Bz,Ey
       real*8 Bz,Ey
       real*8 B,y0
       integer counter
-      common/func/B,y0,counter
+      common/func/y0,counter
 
 
       Ex=0D0					 
@@ -99,41 +123,41 @@
       return
       end
 
-      !p varies angle, q varies velocity
+      !p chooses number of angle variations
+      !q chooses number of velocity variations
       subroutine result
       implicit none
       common/trajectory/Bz,Ey
       real*8 Bz,Ey
-      common/par/ pi,me,e,length,vini
-      real*8 pi,me,e,length,vini
+      common/par/ pi,me,e,vini,B,pend,dw
+      real*8 pi,me,e,length,vini,B,pend
       common/tole/ tol
       real*8 tol
+      common/pulse/ dE,dtheta
+      real*8 dE,dtheta
       integer counter,test
       real*8 y1old
-      common/time/ endoftim
       real*8 divider,endoftim
       integer mxparm,neq,i,ido,p,q,k,l,boundarycheck,scani
-      parameter (mxparm=120,neq=6,p=31,q=31)
+      parameter (mxparm=120,neq=6,p=3,q=3)
       integer error, ti, scanl,midk,midl,n_bins
       parameter (scanl=40,n_bins=40)
       integer hist(2,0:scanl,1:n_bins)
-      real*8 fcn,param(mxparm),t,tend,tft,y(neq),E0,dw,dE,dtheta
+      real*8 fcn,param(mxparm),t,tend,tft,y(neq),E0,dw
       real*8 mem(2,1000,p*q)
-      real*8 B,y0,bin_size,minimum,maximum,sums,sumsq,pulsecenter
-      common/func/B,y0,counter
+      real*8 y0,bin_size,minimum,maximum,pulsecenter
+      common/func/y0,counter
 
-      parameter (dw=.5D5,dE=1D-3,dtheta=2D-3)
-      real*8 pend,pos1,pos2,endtime,step,endTstep,sls
-      real*8 dw1,dw2,ddw,wfls,bls,yold,theta,theta2,scanprec
-      parameter (pend=1D5,ddw=1D-4,scanprec=2.5D-1)
-      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,scandata(p,q,0:scanl),scandx(0:scanl*2)
-      real*8 timecheck,xf(p,q),yf(p,q),ET0,ET,endpoints(2,p,q),sd
+      real*8 pos1,pos2,endtime,step,endTstep,sls
+      real*8 dw1,dw2,wfls,bls,scanprec
+      parameter (scanprec=2.5D-1)
+      real*8 tftold,hiTstep,lowTstep,wfTstep,bTstep,scandata(p,q,0:scanl),scandx(0:scanl)
+      real*8 ET0,ET,endpoints(2,p,q),sd
       logical scanning
       
       external fcn,divprk,sset
 
       scanning=.false.
-      B=3.1D-15 !B-Field value for turning fields 
 
       !initial calculations
       midk=(p+1)/2
@@ -154,7 +178,6 @@
       hiTstep=lowTstep*1D-5          !hi-res step for approaching borders 
       endTstep=lowTstep*1D-5    !set step size for final section
       E0=-(pend*B*vini)/(dw*4D0)    !set E field for WF based on theory
-      write(6,*) me*vini/(e*B)
       
 
       !some distance calculations
@@ -249,17 +272,15 @@
                   step=hiTstep
                   boundarycheck=boundarycheck+1
                endif
-               if ((y1old.le.dw1).and.(y(1).gt.dw1)) then ! enter thw WF
+               if ((y1old.le.dw1).and.(y(1).gt.dw1)) then ! enter the WF
                   counter=4
                   Ey=E0
                   Bz=Ey/vini
                   step=wfTstep
                   y0=y(2)                   ! y0 has the center of the WF
-                  timecheck=tft
                endif
 
-            case (4)
-
+            case (4) !Inside the WF
                if ((y1old.le.dw2-wfls).and.(y(1).gt.dw2-wfls)) then
                   step=lowTstep
                   boundarycheck=boundarycheck+1
@@ -275,7 +296,7 @@
                   Ey=0D0
                endif
 
-            case (5)
+            case (5) ! free space between WF and second turning fields
                if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                   step=hiTstep
                   boundarycheck=boundarycheck+1
@@ -287,7 +308,7 @@
                   Ey=0D0
                endif
 
-            case (6)
+            case (6) ! turning fields 1
                if ((y1old.ge.pos2+bls).and.(y(1).lt.pos2+bls)) then
                   step=hiTstep
                   boundarycheck=boundarycheck+1
@@ -301,7 +322,7 @@
                   counter=7
                   Bz=-B
                endif
-            case (7)
+            case (7) ! turning fields 2
                if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
                   step=hiTstep
                   boundarycheck=boundarycheck+1
@@ -329,15 +350,12 @@
          enddo
 
           ido=3
-          endtime=tft
-          write(6,*) endtime-endoftim
-          write(6,*) "debug", pend,tft, y(1)
+          endtime=tft !total propagation time
           call divprk(ido,neq,fcn,t,tend,tol,param,y) !close out ODE workspace
 
 
 
           !first electron done, do the rest
-
           divider=endtime/1000D0
           do l=1,q
               do k=1,p
@@ -357,10 +375,10 @@
                   enddo
 
                   !sets energy spread to dE and angle spread to dtheta
-                  y(4)=(1.00D0+dE/(4D0*(q-1)/2D0)*(l-midl))*vini*dcos(dtheta/2D0*(k-midk)/((p-1)/2D0))
-                  y(5)=(1.00D0+dE/(4D0*(q-1)/2D0)*(l-midl))*vini*dsin(dtheta/2D0*(k-midk)/((p-1)/2D0))
+                  y(4)=(1.00D0+dE/(4D0*(q-1)/2D0)*(l-midl))*vini*dcos(dtheta*(k-midk)/((p-1)/2D0))
+                  y(5)=(1.00D0+dE/(4D0*(q-1)/2D0)*(l-midl))*vini*dsin(dtheta*(k-midk)/((p-1)/2D0))
 
-                  ET0=.5D0*me*(y(4)**2+y(5)**2)
+                  ET0=.5D0*me*(y(4)**2+y(5)**2) !Initial Energy
 
                   write(6,50) k,p,l,q,dE
 50    format(x/,x,i2,'/',i2,x,i2,'/',i2,x," dEm=",E15.7)
@@ -375,35 +393,40 @@
 
                   ! loop until the scan has finished
                   do while(scani.le.scanl)
+                     !Store 1000 pts of path data
                      if ((test*divider).le.tft.and.test.lt.999) then
                         test=test+1
                         mem(1,test,k+p*(l-1))=y(1)
                         mem(2,test,k+p*(l-1))=y(2)
                      endif
 
+                     !Check that energy is staying conserved
                      ET=.5D0*me*(y(4)**2+y(5)**2)+Ey*q*y(2)
-                      i=i+1
-                      tft=tft+step
-                      tend=tft  
-                      if ((ET-ET0)/ET0.gt.1D-10) then
-                         write(6,*) "SOMETHING IS WRONG! ET: ",ET," ET0: ", ET0
-                         write(6,*) counter
-                         ET0=ET
-                      endif
+                     if ((ET-ET0)/ET0.gt.1D-10) then
+                        write(6,*) "SOMETHING IS WRONG! ET: ",ET," ET0: ", ET0
+                        write(6,*) counter
+                        ET0=ET
+                     endif
 
-                      if(MOD(i,100000).eq.0) then
 66    format(i3,'%')
-                         write(6,66) int(tft/endtime*100)
-                      endif
-                      call divprk(ido,neq,fcn,t,tend,tol,param,y)
+                     !output progress
+                     if(MOD(i,100000).eq.0) then
+                        write(6,66) int(tft/endtime*100)
+                     endif
+
+                     !setup next run
+                     i=i+1
+                     tft=tft+step
+                     tend=tft  
+                     call divprk(ido,neq,fcn,t,tend,tol,param,y)
 
 
-                      !same switch as above
-                      select case (counter)
-                      case (0)
-                          Bz=0D0
-                          Ey=0D0
-                          if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
+                     !same switch as above
+                     select case (counter)
+                     case (0)
+                        Bz=0D0
+                        Ey=0D0
+                        if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
                               step=hiTstep
                               boundarycheck=boundarycheck+1
                           endif
@@ -417,20 +440,12 @@
                               step=hiTstep
                               boundarycheck=boundarycheck+1
                           endif
-                          if ((y1old.ge.pos1+sls).and.(y(1).lt.pos1+sls)) then
-                              !step=hiTstep
-                              boundarycheck=boundarycheck+1
-                          endif
                           if ((y1old.gt.pos1).and.(y(1).le.pos1)) then
                               counter=2
                               step=bTstep
                               Bz=B
                           endif
                       case (2)
-                          if ((y1old.le.pos1-sls).and.(y(1).gt.pos1-sls)) then
-                              !step=hiTstep
-                              boundarycheck=boundarycheck+1
-                          endif
                           if ((y1old.le.pos1-bls).and.(y(1).gt.pos1-bls)) then
                               step=hiTstep
                               boundarycheck=boundarycheck+1
@@ -448,22 +463,14 @@
                           endif
                           if ((y1old.le.dw1).and.(y(1).gt.dw1)) then
                               !ENTERING WIEN FILTER
-                              !calculate old velocity and angle
-                              yold=y(4)
-                              theta=ATAN(y(5)/y(4))
-
                               !set new velocity based on calculated energy change
-                              y(4)=dsqrt(yold**2+2D0*E0*e*(y(2)-y0)/me)
-                              !write(6,*) "yold=",yold,"vx_0 in filter=", y(4)
-                              !write(6,*) "y=", y(2)-y0                  
-                              !write(6,*) "y_a=", 
+                              !only affecting x-direction (perp. to barrier)
+                              y(4)=dsqrt(y(4)**2+2D0*E0*e*(y(2)-y0)/me)
 
-                              counter=4
                               Ey=E0
                               !Matched B field. For particle traveling strait through, the field should be balanced
-                              !Bz=E0*(1/vini-((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me*vini**3)+((y(2)-y0)*(e*(B*vini+4D0*E0))/(4D0*me))**2*(1/vini**6))*1D0)
                               Bz= E0/(vini+(B/4+E0/vini)*e*(y(2)-y0)/me)
-                              !Bz= E0/(dsqrt((vini+(y(2)-y0)*e*B/(4D0*me))**2+2D0*E0*e*(y(2)-y0)/me))
+                              counter=4
                               step=wfTstep
                           endif
 
@@ -479,12 +486,7 @@
                          endif
                           if ((y1old.le.dw2).and.(y(1).gt.dw2)) then
                               !calculate velocity change for leaving WF
-                              yold=y(4)
-                              theta=ATAN(y(5)/y(4))
-                              theta2=theta
-
-
-                              y(4)=dsqrt(yold**2-2D0*E0*e*(y(2)-y0)/me)
+                              y(4)=dsqrt(y(4)**2-2D0*E0*e*(y(2)-y0)/me)
                               counter=5
                               Bz=0D0
                               Ey=0D0
@@ -508,10 +510,6 @@
                               step=hiTstep
                               boundarycheck=boundarycheck+1
                           endif
-                          if ((y1old.ge.pos2+sls).and.(y(1).lt.pos2+sls)) then
-                              !step=hiTstep
-                              boundarycheck=boundarycheck+1
-                          endif
                           if ((y1old.gt.pos2).and.(y(1).le.pos2)) then
                               step=bTstep
                               counter=7
@@ -519,10 +517,6 @@
                           endif
                       case (7)
                           if ((y1old.le.pos2-bls).and.(y(1).gt.pos2-bls)) then
-                              step=lowTstep
-                              boundarycheck=boundarycheck+1
-                          endif
-                          if ((y1old.le.pos2-sls).and.(y(1).gt.pos2-sls)) then
                               step=hiTstep
                               boundarycheck=boundarycheck+1
                           endif
@@ -535,10 +529,8 @@
                        case(8)
                           if(scanning) then
                              scandata(k,l,scani)=y(1)
-                             if(k.eq.midk-1.and.l.eq.midl-1) write(6,*) y(1)
                              scani=scani+1
                              step=lowTstep*scanprec
-                             !write(6,*) scani,scanl,tft,endtime
                           endif
 
                           if(.not.scanning) then
@@ -547,17 +539,11 @@
                              scani=0
                           endif
                       end select
-                      if ((tft.gt.endoftim-lowTstep*2D0).and.(tftold.le.endoftim-lowTstep*2D0)) then
-                          !step=hiTstep
-                          boundarycheck=boundarycheck+1
-                      endif
 
                       !write out predicted locatoin of focus
                       if((tftold.lt.endtime).and.(tft.gt.endtime)) then
-                          xf(k,l)=y(1)
-                          yf(k,l)=y(2)
-                          endpoints(1,k,l)=xf(k,l)-pend
-                          endpoints(2,k,l)=yf(k,l)
+                          endpoints(1,k,l)=y(1)-pend
+                          endpoints(2,k,l)=y(2)
                       endif
 
                       !store info from last run
@@ -567,7 +553,7 @@
                   enddo
 
                   !if not all the boundaries were hit, throw an error
-                  if(boundarycheck.ne.14) then
+                  if(boundarycheck.ne.9) then
                      error=1
                   endif
                   boundarycheck=0
@@ -588,28 +574,30 @@
 
           if (error.eq.1) write(6,*) "Invalid Test"
       enddo
-      write(6,*) "dx=", maxval(xf(1:p,1:q))-minval(xf(1:p,1:q))
+      write(6,*) "dx=", maxval(endpoints(1,:,:))-minval(endpoints(1,:,:))
       write(6,*) "dE=",dE
       write(6,*) "dv=", dE/4D0*vini
       write(6,*) "dtheta=",dtheta
       if (error.eq.1) write(6,*) "Invalid Test", boundarycheck
 
       do test=0,scanl
-         sums=0D0
-         sumsq=0D0
          pulsecenter=scandata(midk,midl,test)
          do l=1,q
             do k=1,p
                scandata(k,l,test)=scandata(k,l,test)-pulsecenter
-               sumsq=sumsq+scandata(k,l,test)**2D0
-               sums=sums+scandata(k,l,test)
             enddo
          enddo
 
+         !calculate standard deviation at each point on the scan
          call stddev(scandata(1:p,1:q,test),p*q,sd)
          scandx(test)=sd
 
+         !write out all scan paths
          write(15,104) lowTstep*scanprec*(test-scanl/2D0)*vini,(scandata(1:p,1:q,test)-scandata((p+1)/2,(q+1)/2,test))/vini
+         !write out std_dev pulse width at each scan pt
+         write(12,101) lowTstep*scanprec*(test-scanl/2D0)*vini,scandx(test)/vini
+
+         !construct histogram of paths
          minimum=minval(scandata(1:p,1:q,test))
          maximum=maxval(scandata(1:p,1:q,test))
          bin_size=(maximum-minimum)/n_bins
@@ -617,28 +605,27 @@
             hist(1,test,i)=count(scandata(1:p,1:q,test).le.bin_size*i+minimum.and.scandata(1:p,1:q,test).gt.bin_size*(i-1)+minimum)
             hist(2,test,i)=minimum+bin_size*i
          enddo
-
-         write(12,101) lowTstep*scanprec*(test-scanl/2D0)*vini,scandx(test)/vini
       enddo
       do test=1,n_bins
          write(16,106) hist(1:2,:,test)
       enddo
 
+      !if the minimum is at the front or back of scan, not a true minimum
       if(minval(scandx(0:scanl)).eq.scandx(0).or.minval(scandx(0:scanl)).eq.scandx(scanl)) then
          write(6,*) "WARNING!! False Minimum. increase scanl or scanprec"
       endif
 
+      write(6,*) "dx (std_dev)=", minval(scandx(0:scanl))
 
-      !write(6,*) "dx is also=", minval(scandx(0:scanl*2))
-
+      !write out all paths
       do test=1,1000
           write(11,102) mem(1:2,test,1:p*q)
       enddo
 
+      !write out electron positions at predicted focus
       do l=1,q
          do k=1,p
             write(13,104) endpoints(1:2,k,l)
-            !write(13,101) xf(k,l)-pend,yf(k,l)
          enddo
       enddo
 
@@ -655,6 +642,8 @@
       return
       end
 
+      !stdev: calculate standard deviation of array x with npts values.
+      !stores standard deviation in sd.
       subroutine stddev(x,npts,sd)
       integer npts,i
       real*8 x(npts),avg,sd,sums,sumsq
